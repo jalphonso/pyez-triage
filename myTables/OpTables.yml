@@ -1,0 +1,18 @@
+---
+PortFecTable:
+  rpc: get-interface-information
+  args:
+    extensive: true
+    interface_name: '[fgxe][et]*'
+  args_key: interface_name
+  item: physical-interface
+  view: PortFecView
+
+PortFecView:
+  groups:
+    fec: ethernet-fec-statistics
+  fields_fec:
+    fec_ccw_count: { fec_ccw_count: int }
+    fec_nccw_count: { fec_nccw_count: int }
+    fec_ccw_error_rate: { fec_ccw_error_rate: int }
+    fec_nccw_error_rate: { fec_nccw_error_rate: int }
