@@ -6,6 +6,7 @@ FEC errors if available, and Optic related info if applicable
 # Details
 
 ### Sample Output
+```
 ansible-playbook -i hosts network_triage.pb.yml
 Enter username: testuser1
 Enter password:
@@ -1494,3 +1495,4 @@ PLAY RECAP *********************************************************************
 mx240-1                    : ok=2    changed=1    unreachable=0    failed=0
 qfx5100-1                  : ok=2    changed=1    unreachable=0    failed=0
 qfx5100-2                  : ok=2    changed=1    unreachable=0    failed=0
+```
