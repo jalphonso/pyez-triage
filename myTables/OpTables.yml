@@ -47,3 +47,30 @@ PhyPortDiagView:
     tx_power_low_alarm: { laser-tx-power-low-alarm: True=on }
     tx_power_high_warn: { laser-tx-power-high-warn: True=on }
     tx_power_low_warn: { laser-tx-power-low-warn: True=on }
+
+bgpSummaryTable:
+  rpc: get-bgp-summary-information
+  item: bgp-peer
+  view: bgpSummaryView
+  key: peer-address
+
+bgpSummaryView:
+  fields:
+    elapsed_time_secs: elapsed-time
+
+bgpTable:
+ rpc: get-bgp-neighbor-information
+ item: bgp-peer
+ view: bgpView
+ key: peer-id
+
+bgpView:
+ fields:
+  local_as: local-as
+  peer_as: peer-as
+  local_address: local-address
+  peer_address: peer-address
+  peer_id: peer-id
+  local_id: local-id
+  route_received: bgp-rib/received-prefix-count
+  local_interface: local-interface-name

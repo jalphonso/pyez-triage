@@ -1,6 +1,8 @@
 # Summary
 This project gathers useful troubleshooting info from a device including interface errors
-FEC errors if available, and Optic related info if applicable\
+FEC errors if available, and Optic related info if applicable. If Optics are in alarm or warning
+state a message indicating as such is output to the screen.\
+Also outputs some useful BGP info. More to come...\
 *PyEZ is the library used here to perform the work.*
 
 # Details
@@ -12,19 +14,20 @@ Enter username: testuser1
 Enter password:
 confirm Enter password:
 
-PLAY [all] *******************************************************************************************************
+PLAY [all] ***************************************************************************************************************************************************************************************************************************
 
-TASK [network_triage] ********************************************************************************************
+TASK [network_triage] ****************************************************************************************************************************************************************************************************************
 ok: [mx240-1]
-ok: [qfx5100-1]
 ok: [qfx5100-2]
+ok: [qfx5100-1]
 
-TASK [debug] *****************************************************************************************************
+TASK [debug] *************************************************************************************************************************************************************************************************************************
 ok: [qfx5100-1] => {
     "python_output.stdout_lines": [
-        "#####################################################################",
         "",
+        "################################### DEVICE BEGIN ########################################",
         "Conducting triage of device 192.168.0.15",
+        "############################# BEGIN TROUBLESHOOT INTERFACES #############################",
         "",
         "INTERFACE: xe-0/0/0",
         "  Input Errors:",
@@ -554,14 +557,31 @@ ok: [qfx5100-1] => {
         "    FEC Corrected Errors: 0  FEC Uncorrected Errors: 0",
         "    FEC Corrected Errors Rate: 0  FEC Uncorrected Errors Rate: 0",
         "",
-        "#####################################################################"
+        "############################# END OF TROUBLESHOOT INTERFACES ############################",
+        "",
+        "############################# BEGIN TROUBLESHOOT BGP ####################################",
+        "",
+        "Local ID: 192.168.194.1   Local AS: 65000   Local Address: 192.168.194.1+52343",
+        "Peer  ID: 192.168.210.1   Peer  AS: 64512   Peer Address: 192.168.194.254+179",
+        "Num Routes Received: 2    Local Interface: xe-0/0/41.0",
+        "Elapsed Time(secs): 3w0d 1:05:04",
+        "",
+        "Local ID: 192.168.130.1   Local AS: 65000   Local Address: 192.168.198.1+179",
+        "Peer  ID: 192.168.210.2   Peer  AS: 64512   Peer Address: 192.168.198.254+51800",
+        "Num Routes Received: 1    Local Interface: irb.198",
+        "Elapsed Time(secs): 4w5d 2:50:17",
+        "",
+        "############################# END OF TROUBLESHOOT BGP ###################################",
+        "",
+        "################################### DEVICE END ##########################################"
     ]
 }
 ok: [qfx5100-2] => {
     "python_output.stdout_lines": [
-        "#####################################################################",
         "",
+        "################################### DEVICE BEGIN ########################################",
         "Conducting triage of device 192.168.0.16",
+        "############################# BEGIN TROUBLESHOOT INTERFACES #############################",
         "",
         "INTERFACE: xe-0/0/0",
         "  Input Errors:",
@@ -1146,14 +1166,21 @@ ok: [qfx5100-2] => {
         "    FEC Corrected Errors: 0  FEC Uncorrected Errors: 0",
         "    FEC Corrected Errors Rate: 0  FEC Uncorrected Errors Rate: 0",
         "",
-        "#####################################################################"
+        "############################# END OF TROUBLESHOOT INTERFACES ############################",
+        "",
+        "############################# BEGIN TROUBLESHOOT BGP ####################################",
+        "",
+        "############################# END OF TROUBLESHOOT BGP ###################################",
+        "",
+        "################################### DEVICE END ##########################################"
     ]
 }
 ok: [mx240-1] => {
     "python_output.stdout_lines": [
-        "#####################################################################",
         "",
+        "################################### DEVICE BEGIN ########################################",
         "Conducting triage of device 192.168.0.23",
+        "############################# BEGIN TROUBLESHOOT INTERFACES #############################",
         "",
         "INTERFACE: xe-2/0/0",
         "  Input Errors:",
@@ -1188,7 +1215,8 @@ ok: [mx240-1] => {
         "    HS link CRC errors: 0  MTU errors: 0  Resource errors: 0",
         "  Optic Diag:",
         "    RX Optic Power: -40.00  TX Optic Power: -2.03",
-        "    Module Temp: 28 degrees C / 83 degrees F  Module Voltage: 3.3100",
+        "    Module Temp: 28 degrees C / 82 degrees F  Module Voltage: 3.3100",
+        "  **Receiver power is too high or low. Interface possibly off**",
         "",
         "INTERFACE: xe-2/0/4",
         "  Input Errors:",
@@ -1207,7 +1235,8 @@ ok: [mx240-1] => {
         "    HS link CRC errors: 0  MTU errors: 0  Resource errors: 0",
         "  Optic Diag:",
         "    RX Optic Power: -31.55  TX Optic Power: -2.64",
-        "    Module Temp: 29 degrees C / 83 degrees F  Module Voltage: 3.3120",
+        "    Module Temp: 28 degrees C / 83 degrees F  Module Voltage: 3.3120",
+        "  **Receiver power is too high or low. Interface possibly off**",
         "",
         "INTERFACE: xe-2/0/6",
         "  Input Errors:",
@@ -1225,8 +1254,9 @@ ok: [mx240-1] => {
         "    Carrier transitions: 0  Errors: 0  Drops: 0  Collisions: 0  Aged packets: 0  FIFO errors: 0",
         "    HS link CRC errors: 0  MTU errors: 0  Resource errors: 0",
         "  Optic Diag:",
-        "    RX Optic Power: - Inf  TX Optic Power: -2.67",
+        "    RX Optic Power: -40.00  TX Optic Power: -2.61",
         "    Module Temp: 29 degrees C / 84 degrees F  Module Voltage: 3.3150",
+        "  **Receiver power is too high or low. Interface possibly off**",
         "",
         "INTERFACE: xe-2/0/8",
         "  Input Errors:",
@@ -1484,14 +1514,25 @@ ok: [mx240-1] => {
         "    Carrier transitions: 1  Errors: 0  Drops: 0  Collisions: 0  Aged packets: 0  FIFO errors: 0",
         "    HS link CRC errors: 0  MTU errors: 0  Resource errors: 0",
         "  Optic Diag:",
-        "    RX Optic Power: -2.50  TX Optic Power: -2.34",
-        "    Module Temp: 26 degrees C / 79 degrees F  Module Voltage: 3.3110",
+        "    RX Optic Power: -2.53  TX Optic Power: -2.30",
+        "    Module Temp: 26 degrees C / 78 degrees F  Module Voltage: 3.3110",
         "",
-        "#####################################################################"
+        "############################# END OF TROUBLESHOOT INTERFACES ############################",
+        "",
+        "############################# BEGIN TROUBLESHOOT BGP ####################################",
+        "",
+        "Local ID: 192.168.250.254 Local AS: 65003   Local Address: 192.168.100.2+179",
+        "Peer  ID: 192.168.100.1   Peer  AS: 65010   Peer Address: 192.168.100.1+62859",
+        "Num Routes Received: 1    Local Interface: ms-1/2/0.4002",
+        "Elapsed Time(secs): 2w4d 1:08:34",
+        "",
+        "############################# END OF TROUBLESHOOT BGP ###################################",
+        "",
+        "################################### DEVICE END ##########################################"
     ]
 }
 
-PLAY RECAP *******************************************************************************************************
+PLAY RECAP ***************************************************************************************************************************************************************************************************************************
 mx240-1                    : ok=2    changed=1    unreachable=0    failed=0
 qfx5100-1                  : ok=2    changed=1    unreachable=0    failed=0
 qfx5100-2                  : ok=2    changed=1    unreachable=0    failed=0
