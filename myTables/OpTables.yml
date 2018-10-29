@@ -16,3 +16,34 @@ PortFecView:
     fec_nccw_count: { fec_nccw_count: int }
     fec_ccw_error_rate: { fec_ccw_error_rate: int }
     fec_nccw_error_rate: { fec_nccw_error_rate: int }
+
+
+PhyPortDiagTable:
+  rpc: get-interface-optics-diagnostics-information
+  args:
+    interface_name: '[fgxe][et]*'
+  args_key: interface_name
+  item: physical-interface
+  view: PhyPortDiagView
+
+PhyPortDiagView:
+  groups:
+    diag: optics-diagnostics
+
+  fields_diag:
+    rx_optic_power : rx-signal-avg-optical-power-dbm
+    tx_optic_power : laser-output-power-dbm
+    module_temperature : module-temperature
+    module_voltage : module-voltage
+    rx_power_high_alarm: { laser-rx-power-high-alarm: True=on }
+    rx_power_low_alarm: { laser-rx-power-low-alarm: True=on }
+    rx_power_high_warn: { laser-rx-power-high-warn: True=on }
+    rx_power_low_warn: { laser-rx-power-low-warn: True=on }
+    bias_current_high_alarm: { laser-bias-current-high-alarm: True=on }
+    bias_current_low_alarm: { laser-bias-current-low-alarm: True=on }
+    bias_current_high_warn: { laser-bias-current-high-warn: True=on }
+    bias_current_low_warn: { laser-bias-current-low-warn: True=on }
+    tx_power_high_alarm: { laser-tx-power-high-alarm: True=on }
+    tx_power_low_alarm: { laser-tx-power-low-alarm: True=on }
+    tx_power_high_warn: { laser-tx-power-high-warn: True=on }
+    tx_power_low_warn: { laser-tx-power-low-warn: True=on }

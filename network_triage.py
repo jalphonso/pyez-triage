@@ -2,10 +2,10 @@ import json
 import sys
 from jnpr.junos import Device
 from jnpr.junos.exception import ConnectError
-from jnpr.junos.op.intopticdiag import PhyPortDiagTable
 from jnpr.junos.op.ethernetswitchingtable import EthernetSwitchingTable
 from jnpr.junos.op.phyport import PhyPortErrorTable
 from myTables.OpTables import PortFecTable
+from myTables.OpTables import PhyPortDiagTable
 from pprint import pprint
 
 
@@ -53,6 +53,15 @@ def main():
                           "  Module Temp: {}  Module Voltage: {}".\
                           format(optic.rx_optic_power, optic.tx_optic_power,
                                  optic.module_temperature, optic.module_voltage))
+                    if(optic.rx_power_low_alarm or optic.rx_power_high_alarm):
+                        print("  **Receiver power is too high or low. Interface possibly off**")
+                    elif(optic.rx_power_low_warn or optic.rx_power_high_warn):
+                        print("  **Receiver power is marginal. Possible errors**")
+                    if(optic.bias_current_high_alarm or optic.bias_current_low_alarm or
+                       optic.bias_current_high_warn or optic.bias_current_low_warn or
+                       optic.tx_power_high_alarm or optic.tx_power_low_alarm or
+                       optic.tx_power_high_warn or optic.tx_power_low_warn):
+                        print("  **Transmit Problems. Please check SFP.**")
                 print("")
         print("#####################################################################")
     except ConnectError as err:
