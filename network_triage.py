@@ -84,12 +84,25 @@ def ts_bgp(dev):
     neighsumm = bgpSummaryTable(dev).get()
     for neighbor in neighbors:
         peer_address = neighbor.peer_address.split("+")[0]
-        print("Local ID: {:15} Local AS: {:7} Local Address: {}\nPeer  ID: {:15} Peer  AS: {:7} "\
-              "Peer Address: {:17}\nNum Routes Received: {:4} Local Interface: {}\nElapsed Time(secs): {}\n"\
-              .format(neighbor.local_id, neighbor.local_as, neighbor.local_address,
-                      neighbor.peer_id, neighbor.peer_as, neighbor.peer_address,
-                      neighbor.route_received, neighbor.local_interface,
-                      neighsumm[peer_address].elapsed_time_secs))
+        peer_state = neighbor.peer_state
+        if(peer_state == "Established"):
+            print("Local ID: {:15} Local AS: {:7} Local Address: {}\nPeer  ID: {:15} Peer  AS: {:7} "\
+                  "Peer Address: {:17}\nNum Routes Received: {:4} Local Interface: {}\nElapsed Time(secs): {}\n"\
+                  .format(neighbor.local_id, neighbor.local_as, neighbor.local_address,
+                          neighbor.peer_id, neighbor.peer_as, neighbor.peer_address,
+                          neighbor.route_received, neighbor.local_interface,
+                          neighsumm[peer_address].elapsed_time_secs))
+        elif(peer_state == "Active"):
+            print("Neighbor {} in active state, check configuration".format(neighbor.peer_address))
+        elif(peer_state == "Connect"):
+            print("Neighbor {} in connect state, check protocol configuration".format(neighbor.peer_address))
+        elif(peer_state == "Idle"):
+            print("Neighbor {} in idle state, check reachability".format(neighbor.peer_address))
+        else:
+            print("Unxpected state of {}. Neighbor {} may be in transition, rerun command in a few seconds".\
+                  format(peer_state, neighbor.peer_address))
+
+
     print("############################# END OF TROUBLESHOOT BGP ###################################\n")
 
 

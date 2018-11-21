@@ -74,3 +74,4 @@ bgpView:
   local_id: local-id
   route_received: bgp-rib/received-prefix-count
   local_interface: local-interface-name
+  peer_state: peer-state
