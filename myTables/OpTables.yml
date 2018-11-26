@@ -29,12 +29,36 @@ PhyPortDiagTable:
 PhyPortDiagView:
   groups:
     diag: optics-diagnostics
-
+  fields:
+    lanes: _PhyPortLaneDiagTable
   fields_diag:
     rx_optic_power : rx-signal-avg-optical-power-dbm
     tx_optic_power : laser-output-power-dbm
     module_temperature : module-temperature
     module_voltage : module-voltage
+    rx_power_high_alarm: { laser-rx-power-high-alarm: True=on }
+    rx_power_low_alarm: { laser-rx-power-low-alarm: True=on }
+    rx_power_high_warn: { laser-rx-power-high-warn: True=on }
+    rx_power_low_warn: { laser-rx-power-low-warn: True=on }
+    bias_current_high_alarm: { laser-bias-current-high-alarm: True=on }
+    bias_current_low_alarm: { laser-bias-current-low-alarm: True=on }
+    bias_current_high_warn: { laser-bias-current-high-warn: True=on }
+    bias_current_low_warn: { laser-bias-current-low-warn: True=on }
+    tx_power_high_alarm: { laser-tx-power-high-alarm: True=on }
+    tx_power_low_alarm: { laser-tx-power-low-alarm: True=on }
+    tx_power_high_warn: { laser-tx-power-high-warn: True=on }
+    tx_power_low_warn: { laser-tx-power-low-warn: True=on }
+
+_PhyPortLaneDiagTable:
+    item: optics-diagnostics/optics-diagnostics-lane-values
+    key: lane-index
+    view: _PhyPortLaneDiagView
+
+_PhyPortLaneDiagView:
+  fields:
+    lane_index: { lane-index: int }
+    rx_optic_power : laser-rx-optical-power-dbm
+    tx_optic_power : laser-output-power-dbm
     rx_power_high_alarm: { laser-rx-power-high-alarm: True=on }
     rx_power_low_alarm: { laser-rx-power-low-alarm: True=on }
     rx_power_high_warn: { laser-rx-power-high-warn: True=on }
@@ -59,19 +83,19 @@ bgpSummaryView:
     elapsed_time_secs: elapsed-time
 
 bgpTable:
- rpc: get-bgp-neighbor-information
- item: bgp-peer
- view: bgpView
- key: peer-id
+  rpc: get-bgp-neighbor-information
+  item: bgp-peer
+  view: bgpView
+  key: peer-id
 
 bgpView:
- fields:
-  local_as: local-as
-  peer_as: peer-as
-  local_address: local-address
-  peer_address: peer-address
-  peer_id: peer-id
-  local_id: local-id
-  route_received: bgp-rib/received-prefix-count
-  local_interface: local-interface-name
-  peer_state: peer-state
+  fields:
+    local_as: local-as
+    peer_as: peer-as
+    local_address: local-address
+    peer_address: peer-address
+    peer_id: peer-id
+    local_id: local-id
+    route_received: bgp-rib/received-prefix-count
+    local_interface: local-interface-name
+    peer_state: peer-state

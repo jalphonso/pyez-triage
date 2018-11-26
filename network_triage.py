@@ -60,21 +60,37 @@ def ts_interface(dev):
                   "  FEC Uncorrected Errors Rate: {}"\
                   .format(fec_err.fec_ccw_count, fec_err.fec_nccw_count,
                           fec_err.fec_ccw_error_rate, fec_err.fec_nccw_error_rate))
-        if(err.name in optics and optics[err.name].rx_optic_power is not None):
+        if(err.name in optics):
             optic = optics[err.name]
-            print("  Optic Diag:\n    RX Optic Power: {}  TX Optic Power: {}\n  "\
-                  "  Module Temp: {}  Module Voltage: {}".\
-                  format(optic.rx_optic_power, optic.tx_optic_power,
-                         optic.module_temperature, optic.module_voltage))
-            if(optic.rx_power_low_alarm or optic.rx_power_high_alarm):
-                print("  **Receiver power is too high or low. Interface possibly off**")
-            elif(optic.rx_power_low_warn or optic.rx_power_high_warn):
-                print("  **Receiver power is marginal. Possible errors**")
-            if(optic.bias_current_high_alarm or optic.bias_current_low_alarm or
-               optic.bias_current_high_warn or optic.bias_current_low_warn or
-               optic.tx_power_high_alarm or optic.tx_power_low_alarm or
-               optic.tx_power_high_warn or optic.tx_power_low_warn):
-                print("  **Transmit Problems. Please check SFP.**")
+            if(optic.lanes):
+                for lane in optic.lanes:
+                    print("  Optic Diag Lane# {}:\n    RX Optic Power: {}  TX Optic Power: {}\n  "\
+                          "  Module Temp: {}  Module Voltage: {}".\
+                          format(lane.name, lane.rx_optic_power, lane.tx_optic_power,
+                                 optic.module_temperature, optic.module_voltage))
+                    if(lane.rx_power_low_alarm or lane.rx_power_high_alarm):
+                        print("  **Receiver power is too high or low. Interface possibly off**")
+                    elif(lane.rx_power_low_warn or lane.rx_power_high_warn):
+                        print("  **Receiver power is marginal. Possible errors**")
+                    if(lane.bias_current_high_alarm or lane.bias_current_low_alarm or
+                       lane.bias_current_high_warn or lane.bias_current_low_warn or
+                       lane.tx_power_high_alarm or lane.tx_power_low_alarm or
+                       lane.tx_power_high_warn or lane.tx_power_low_warn):
+                        print("  **Transmit Problems. Please check SFP.**")
+            elif(optic.rx_optic_power):
+                print("  Optic Diag:\n    RX Optic Power: {}  TX Optic Power: {}\n  "\
+                      "  Module Temp: {}  Module Voltage: {}".\
+                      format(optic.rx_optic_power, optic.tx_optic_power,
+                             optic.module_temperature, optic.module_voltage))
+                if(optic.rx_power_low_alarm or optic.rx_power_high_alarm):
+                    print("  **Receiver power is too high or low. Interface possibly off**")
+                elif(optic.rx_power_low_warn or optic.rx_power_high_warn):
+                    print("  **Receiver power is marginal. Possible errors**")
+                if(optic.bias_current_high_alarm or optic.bias_current_low_alarm or
+                   optic.bias_current_high_warn or optic.bias_current_low_warn or
+                   optic.tx_power_high_alarm or optic.tx_power_low_alarm or
+                   optic.tx_power_high_warn or optic.tx_power_low_warn):
+                    print("  **Transmit Problems. Please check SFP.**")
         print("")
     print("############################# END OF TROUBLESHOOT INTERFACES ############################\n")
 
