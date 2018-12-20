@@ -1,4 +1,7 @@
 test.py
+.pylintrc
+.vscode
+logs/
 *.swp
 *.bak
 *.pyc

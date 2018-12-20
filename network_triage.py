@@ -1,8 +1,11 @@
+from __future__ import print_function
+
 import sys
 from jnpr.junos import Device
 from jnpr.junos.exception import ConnectError
 from jnpr.junos.op.phyport import PhyPortErrorTable
 from jnpr.junos.op.bgp import bgpTable
+from jnpr.junos.utils.scp import SCP
 from myTables.OpTables import PortFecTable
 from myTables.OpTables import PhyPortDiagTable
 from myTables.OpTables import bgpSummaryTable
@@ -21,6 +24,12 @@ def main():
         with Device(host=hostname, port=port, user=username, passwd=password) as dev:
             ts_interface(dev)
             ts_bgp(dev)
+
+            print("################################# BEGIN PARSE SYSLOG ####################################\n")
+            ntp, lic = retrieve_and_parse_log(dev)
+            print("ntp_issue: {}, license_issue: {}".format(ntp, lic))
+            print("################################ END OF PARSE SYSLOG ####################################\n")
+
         print("################################### DEVICE END ##########################################\n")
     except ConnectError as err:
         print("Cannot connect to device: {0}".format(err))
@@ -120,6 +129,24 @@ def ts_bgp(dev):
 
 
     print("############################# END OF TROUBLESHOOT BGP ###################################\n")
+
+def retrieve_and_parse_log(dev):
+    ntp_issue = False
+    license_issue=False
+
+    print("Transferring /var/log/messages from device")
+    with SCP(dev, progress=True) as scp1:
+        scp1.get("/var/log/messages", local_path="logs/"+dev.hostname+"-messages")
+    with open("logs/"+dev.hostname+"-messages") as messages:
+        lines = messages.readlines()
+        for line in lines:
+            if "NTP" and "Unreachable" in line:
+                #print(line, end='')
+                ntp_issue = True
+            elif "License" in line:
+                #print(line, end='')
+                license_issue = True
+    return ntp_issue, license_issue
 
 
 if __name__ == "__main__":
