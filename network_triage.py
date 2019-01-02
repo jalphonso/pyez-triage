@@ -24,12 +24,7 @@ def main():
         with Device(host=hostname, port=port, user=username, passwd=password) as dev:
             ts_interface(dev)
             ts_bgp(dev)
-
-            print("################################# BEGIN PARSE SYSLOG ####################################\n")
-            ntp, lic = retrieve_and_parse_log(dev)
-            print("ntp_issue: {}, license_issue: {}".format(ntp, lic))
-            print("################################ END OF PARSE SYSLOG ####################################\n")
-
+            retrieve_and_parse_log(dev)
         print("################################### DEVICE END ##########################################\n")
     except ConnectError as err:
         print("Cannot connect to device: {0}".format(err))
@@ -131,6 +126,8 @@ def ts_bgp(dev):
     print("############################# END OF TROUBLESHOOT BGP ###################################\n")
 
 def retrieve_and_parse_log(dev):
+    print("################################# BEGIN PARSE SYSLOG ####################################\n")
+
     ntp_issue = False
     license_issue=False
 
@@ -146,7 +143,8 @@ def retrieve_and_parse_log(dev):
             elif "License" in line:
                 #print(line, end='')
                 license_issue = True
-    return ntp_issue, license_issue
+    print("ntp_issue: {}, license_issue: {}\n".format(ntp_issue, license_issue))
+    print("################################ END OF PARSE SYSLOG ####################################\n")
 
 
 if __name__ == "__main__":
