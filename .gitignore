@@ -8,3 +8,5 @@ logs/
 *.log
 *.retry
 hosts
+.venv/
+.DS_Store

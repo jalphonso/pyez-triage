@@ -1,0 +1,30 @@
+{
+    "phy_errs": {
+        "rx_err_input": ">= 100",
+        "rx_err_drops": "> 0",
+        "rx_err_frame": "> 0",
+        "rx_err_runts": "> 0",
+        "rx_err_discards": "> 0",
+        "rx_err_l3-incompletes": "> 0",
+        "rx_err_l2-channel": "> 0",
+        "rx_err_l2-mismatch": "> 0",
+        "rx_err_fifo": "> 0",
+        "rx_err_resource": "> 0",
+        "tx_err_carrier-transitions": "> 0",
+        "tx_err_output": "> 0",
+        "tx_err_drops": "> 0",
+        "tx_err_collisions": "> 0",
+        "tx_err_aged": "> 0",
+        "tx_err_fifo": "> 0",
+        "tx_err_hs-crc": "> 0",
+        "tx_err_mtu": "> 0",
+        "tx_err_resource": "> 0"
+    },
+    "fec_errs": {
+        "fec_ccw_count": "> 0",
+        "fec_nccw_count": "> 0",
+        "fec_ccw_error_rate": "> 0",
+        "fec_nccw_error_rate": "> 0"
+
+    }
+}
