@@ -1,3 +1,4 @@
+import argparse
 import getpass
 import json
 import sys
@@ -162,27 +163,32 @@ def logs(dev):
 
 
 def main():
+    parser = argparse.ArgumentParser(description='Execute troubleshooting operation(s)')
+    parser.add_argument('-o', '--oper', dest='operations', metavar='<oper>',
+                        choices=['all','ints','bgp','logs'], default=['all'],
+                        nargs='+', help='select operation(s) to run from list')
+    parser.add_argument('-u', '--user', dest='user', metavar='<username>', required=True,
+                        help='provide username for ssh login to devices')
+    parser.add_argument('-p', '--pass', dest='passwd', metavar='<password>',
+                        help='provide ssh password or passphrase')
+    parser.add_argument('-c', '--config', dest='ssh_config', metavar='<ssh_config>', default='',
+                        help='provide ssh config path')
+    parser.add_argument('-i', '--inventory', dest='inventory_path', metavar='<inventory_path>',
+                        required=True, help='provide ansible inventory path')
 
-    try:
-        inventory_path = sys.argv[1]
-    except IndexError:
-        print(f"{Fore.RED}{_create_header('usage')}")
-        print("python network_triage.py <inventory path> <operation comma sep list>")
-        print("Supported operations are 'ints,bgp,logs'")
-        print(f'i.e. python network_triage.py inventory/dc1 "bgp,logs"\n{Style.RESET_ALL}')
-        sys.exit(1)
-
-    try:
-        operations = sys.argv[2].split(",")
-    except IndexError:
+    args = parser.parse_args()
+    if args.operations == ['all']:
         operations = ["ints", "bgp", "logs"]
+    else:
+        operations = args.operations
 
-    user = input("Enter your user name: ")
-    passwd = getpass.getpass("Enter your password: ")
-    ssh_config = input("Enter path to ssh_config if applicable: ")
+    if args.passwd:
+        passwd = args.passwd
+    else:
+        passwd = getpass.getpass("Enter your password: ")
 
     loader = DataLoader()
-    inventory = InventoryManager(loader=loader, sources=inventory_path)
+    inventory = InventoryManager(loader=loader, sources=args.inventory_path)
     variables = VariableManager(loader=loader, inventory=inventory)
 
     for host in inventory.get_hosts():
@@ -190,7 +196,7 @@ def main():
         netconf_port = variables.get_vars(host=host)['netconf_port']
         try:
             print(f"{Fore.BLUE}Conducting triage of device {hostname}{Style.RESET_ALL}")
-            with Device(host=hostname, port=netconf_port, user=user, passwd=passwd, ssh_config=ssh_config) as dev:
+            with Device(host=hostname, port=netconf_port, user=args.user, passwd=passwd, ssh_config=args.ssh_config) as dev:
                 for operation in operations:
                     globals()[operation](dev)
         except ConnectError as err:
