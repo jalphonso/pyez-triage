@@ -175,6 +175,8 @@ def main():
                         help='provide ssh config path')
     parser.add_argument('-i', '--inventory', dest='inventory_path', metavar='<inventory_path>',
                         required=True, help='provide ansible inventory path')
+    parser.add_argument('-l', '--limit', dest='limit', metavar='<limit>',
+                        help='specify host or group to run operations on')
 
     args = parser.parse_args()
     if args.operations == ['all']:
@@ -193,7 +195,12 @@ def main():
 
     for host in inventory.get_hosts():
         hostname = host.get_name()
+        if args.limit:
+            if not args.limit in [str(g) for g in host.get_groups()] and not args.limit == hostname:
+                continue
+
         netconf_port = variables.get_vars(host=host)['netconf_port']
+
         try:
             print(f"{Fore.BLUE}Conducting triage of device {hostname}{Style.RESET_ALL}")
             with Device(host=hostname, port=netconf_port, user=args.user, passwd=passwd, ssh_config=args.ssh_config) as dev:
