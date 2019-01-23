@@ -35,4 +35,5 @@ i.e. >= 100
 *Note: Must include a space after the comparison operator
 
 Defaults:
+
 <img src="docs/thresholds.png">

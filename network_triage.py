@@ -31,7 +31,37 @@ def _create_header(name):
     return f"{'#'*lpad} {name.upper()} {'#'*rpad}"
 
 
+def _print_if_msg(msg):
+    if msg:
+        print(msg)
+
+
 def ints(dev):
+
+    def _check_optic(optic, header_lines, print_interface):
+        optic_rx_msg = optic_tx_msg = ""
+        if(optic.rx_power_low_alarm or optic.rx_power_high_alarm):
+            optic_rx_msg = f"{Fore.RED}  **Receiver power is too high or low. Interface possibly off**{Style.RESET_ALL}"
+        elif(optic.rx_power_low_warn or optic.rx_power_high_warn):
+            optic_rx_msg = f"{Fore.RED}  **Receiver power is marginal. Possible errors**{Style.RESET_ALL}"
+        if(optic.bias_current_high_alarm or optic.bias_current_low_alarm or
+        optic.bias_current_high_warn or optic.bias_current_low_warn or
+        optic.tx_power_high_alarm or optic.tx_power_low_alarm or
+        optic.tx_power_high_warn or optic.tx_power_low_warn):
+            optic_tx_msg = f"{Fore.RED}  **Transmit Problems. Please check SFP.**{Style.RESET_ALL}"
+        f"    RX Optic Power: {optic.rx_optic_power}  TX Optic Power: {optic.tx_optic_power}"
+        if optic_rx_msg or optic_tx_msg:
+            if print_interface:
+                print(f"INTERFACE: {err.name}")
+                print_interface = False
+            print(header)
+            print(f"    RX Optic Power: {optic.rx_optic_power}  TX Optic Power: {optic.tx_optic_power}")
+            print(f"    Module Temp: {optic.module_temperature}  Module Voltage: {optic.module_voltage}")
+            _print_if_msg(optic_rx_msg)
+            _print_if_msg(optic_tx_msg)
+        return print_interface
+
+
     try:
         with open("thresholds.json") as f:
             json_data = json.load(f)
@@ -48,6 +78,7 @@ def ints(dev):
     phy_fec_errs = PortFecTable(dev).get()
 
     print(f"{Fore.YELLOW}{_create_header('begin troubleshoot interfaces')}{Style.RESET_ALL}\n")
+
     for err in phy_errs:
         print_interface = True
         fec_err = phy_fec_errs[err.name]
@@ -71,39 +102,17 @@ def ints(dev):
                         print(f"{Fore.RED}'{key}' threshold is {str(fec_err_thresh[key])} with value of {str(fec_err[key])}{Style.RESET_ALL}")
                 except KeyError as e:
                     continue
+
         if(err.name in optics):
             optic = optics[err.name]
             if(optic.lanes):
-                if print_interface:
-                    print(f"INTERFACE: {err.name}")
-                    print_interface = False
                 for lane in optic.lanes:
-                    print(f"  Optic Diag Lane# {lane.name}:\n    RX Optic Power: {lane.rx_optic_power}  TX Optic Power: {lane.tx_optic_power}\n  "\
-                        f"  Module Temp: {optic.module_temperature}  Module Voltage: {optic.module_voltage}")
-                    if(lane.rx_power_low_alarm or lane.rx_power_high_alarm):
-                        print("  **Receiver power is too high or low. Interface possibly off**")
-                    elif(lane.rx_power_low_warn or lane.rx_power_high_warn):
-                        print("  **Receiver power is marginal. Possible errors**")
-                    if(lane.bias_current_high_alarm or lane.bias_current_low_alarm or
-                    lane.bias_current_high_warn or lane.bias_current_low_warn or
-                    lane.tx_power_high_alarm or lane.tx_power_low_alarm or
-                    lane.tx_power_high_warn or lane.tx_power_low_warn):
-                        print("  **Transmit Problems. Please check SFP.**")
+                    header = f"  Optic Diag Lane# {lane.name}:"
+                    print_interface = _check_optic(lane, header, print_interface)
             elif(optic.rx_optic_power):
-                if print_interface:
-                    print(f"INTERFACE: {err.name}")
-                    print_interface = False
-                print(f"  Optic Diag:\n    RX Optic Power: {optic.rx_optic_power}  TX Optic Power: {optic.tx_optic_power}\n  "\
-                    f"  Module Temp: {optic.module_temperature}  Module Voltage: {optic.module_voltage}")
-                if(optic.rx_power_low_alarm or optic.rx_power_high_alarm):
-                    print("  **Receiver power is too high or low. Interface possibly off**")
-                elif(optic.rx_power_low_warn or optic.rx_power_high_warn):
-                    print("  **Receiver power is marginal. Possible errors**")
-                if(optic.bias_current_high_alarm or optic.bias_current_low_alarm or
-                optic.bias_current_high_warn or optic.bias_current_low_warn or
-                optic.tx_power_high_alarm or optic.tx_power_low_alarm or
-                optic.tx_power_high_warn or optic.tx_power_low_warn):
-                    print("  **Transmit Problems. Please check SFP.**")
+                header = "  Optic Diag:"
+                print_interface = _check_optic(optic, header, print_interface)
+
     print(f"{Fore.YELLOW}{_create_header('end of troubleshoot interfaces')}{Style.RESET_ALL}\n")
 
 
