@@ -18,15 +18,50 @@ The Colorama library is used to help visually by color coding terminal output to
 
 # Details
 ### Usage
-`python network_triage.py`
-<img src="docs/usage.png">
+```
+usage: network_triage.py [-h] [-o <oper> [<oper> ...]] -u <username>
+                         [-p <password>] [-n] [-c <ssh_config>] -i
+                         <inventory_path> [-l <limit>]
+
+Execute troubleshooting operation(s)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -o <oper> [<oper> ...], --oper <oper> [<oper> ...]
+                        select operation(s) to run from list
+  -u <username>, --user <username>
+                        provide username for ssh login to devices
+  -p <password>, --pass <password>
+                        provide ssh password or passphrase
+  -n, --nopass          disable password prompting
+  -c <ssh_config>, --config <ssh_config>
+                        provide ssh config path
+  -i <inventory_path>, --inventory <inventory_path>
+                        provide ansible inventory path
+  -l <limit>, --limit <limit>
+                        specify host or group to run operations on
+```
+If password is not provided you will be prompted for it unless you specify the `--nopass` arg
+
+*Short and Long arguments are both supported*
+
+```
+$ python network_triage.py -u Lab -i inventory/dc1 -c ~/.ssh/configs/Columbia -l mx240-1 -o blah
+usage: network_triage.py [-h] [-o <oper> [<oper> ...]] -u <username>
+                         [-p <password>] [-n] [-c <ssh_config>] -i
+                         <inventory_path> [-l <limit>]
+network_triage.py: error: argument -o/--oper: invalid choice: 'blah' (choose from 'all', 'ints', 'bgp', 'logs')
+```
 
 ### Examples
-`python network_triage.py inventory/dc1 "bgp,logs"`
+`python network_triage.py -u Lab -i inventory/dc1 -c ~/.ssh/configs/Columbia -o bgp`
 <img src="docs/example1.png">
 
-`python network_triage.py inventory/dc1 "ints"`
+`python network_triage.py -u Lab -i inventory/dc1 -c ~/.ssh/configs/Columbia -l leaf -o bgp logs`
 <img src="docs/example2.png">
+
+`python network_triage.py -u Lab -i inventory/dc1 -c ~/.ssh/configs/Columbia -l mx240-1 -o ints`
+<img src="docs/example3.png">
 
 ### Customize Thresholds
 Set custom thresholds in the thresholds.json file using comparison operators like <, >, <=, >=, ==, != followed by a numerical value.

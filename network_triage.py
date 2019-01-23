@@ -171,6 +171,8 @@ def main():
                         help='provide username for ssh login to devices')
     parser.add_argument('-p', '--pass', dest='passwd', metavar='<password>',
                         help='provide ssh password or passphrase')
+    parser.add_argument('-n', '--nopass', action='store_true',
+                        help='disable password prompting')
     parser.add_argument('-c', '--config', dest='ssh_config', metavar='<ssh_config>', default='',
                         help='provide ssh config path')
     parser.add_argument('-i', '--inventory', dest='inventory_path', metavar='<inventory_path>',
@@ -186,8 +188,10 @@ def main():
 
     if args.passwd:
         passwd = args.passwd
-    else:
+    elif not args.nopass:
         passwd = getpass.getpass("Enter your password: ")
+    else:
+        passwd = None
 
     loader = DataLoader()
     inventory = InventoryManager(loader=loader, sources=args.inventory_path)
