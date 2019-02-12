@@ -12,7 +12,9 @@ those thresholds will have printed output to the screen.
 
 To take advantage of Ansibles inventory management capabilities, the Python script uses the Ansible Python API
 
-The Colorama library is used to help visually by color coding terminal output to more easily identify devices, operations, and errors to focus on
+The Colorama library in conjunction with Python f-strings is used to help visually by color coding terminal output to more easily identify devices, operations, and errors to focus on
+
+*Written for Python 3.6
 
 *PyEZ is the library used here to interact with the network devices.*
 

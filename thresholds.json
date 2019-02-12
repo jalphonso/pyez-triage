@@ -26,5 +26,20 @@
         "fec_ccw_error_rate": "> 0",
         "fec_nccw_error_rate": "> 0"
 
+    },
+    "pcs_stats": {
+        "bit_error_seconds": "> 0",
+        "errored_blocks_seconds": "> 0"
+    },
+    "mac_stats": {
+        "input_mac_control_frames": "> 0",
+        "output_mac_control_frames": "> 0",
+        "input_mac_pause_frames": "> 0",
+        "output_mac_pause_frames": "> 0",
+        "input_oversized_frames": "> 0",
+        "input_jabber_frames": "> 0",
+        "input_fragment_frames": "> 0",
+        "input_vlan_tagged_frames": "> 0",
+        "input_code_violations": "> 0"
     }
 }

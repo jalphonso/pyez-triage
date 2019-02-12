@@ -15,6 +15,8 @@ from jnpr.junos.utils.scp import SCP
 from math import floor, ceil
 from myTables.OpTables import PortFecTable
 from myTables.OpTables import PhyPortDiagTable
+from myTables.OpTables import EthMacStatTable
+from myTables.OpTables import EthPcsStatTable
 from myTables.OpTables import bgpSummaryTable
 from myTables.OpTables import bgpTable
 
@@ -39,7 +41,7 @@ def _print_if_msg(msg):
 
 def ints(dev):
 
-    def _check_optic(optic, header_lines, print_interface):
+    def _check_optic(optic, header, print_interface):
         optic_rx_msg = optic_tx_msg = ""
         if(optic.rx_power_low_alarm or optic.rx_power_high_alarm):
             optic_rx_msg = f"{Fore.RED}  **Receiver power is too high or low. Interface possibly off**{Style.RESET_ALL}"
@@ -71,38 +73,31 @@ def ints(dev):
         print("Skipping interface troubleshooting...")
         return
 
-    phy_err_thresh = json_data['phy_errs']
-    fec_err_thresh = json_data['fec_errs']
-
     optics = PhyPortDiagTable(dev).get()
     phy_errs = PhyPortErrorTable(dev).get()
-    phy_fec_errs = PortFecTable(dev).get()
+    fec_errs = PortFecTable(dev).get()
+    pcs_stats = EthPcsStatTable(dev).get()
+    mac_stats = EthMacStatTable(dev).get()
 
     print(f"{Fore.YELLOW}{_create_header('begin troubleshoot interfaces')}{Style.RESET_ALL}\n")
 
-    for err in phy_errs:
+    for err in (list(phy_errs) + list(fec_errs) + list(pcs_stats) + list(mac_stats)):
+        if err.__class__.__name__ == "PortFecView":
+            key = 'fec_errs'
+        elif err.__class__.__name__ == "PhyPortErrorView":
+            key = 'phy_errs'
+        elif err.__class__.__name__ == "EthPcsStatView":
+            key = 'pcs_stats'
+        elif err.__class__.__name__ == "EthMacStatView":
+            key = 'mac_stats'
         print_interface = True
-        fec_err = phy_fec_errs[err.name]
-        for key in phy_err_thresh.keys():
-            try:
-                if _reached_threshold(str(err[key]), str(phy_err_thresh[key])):
+        for subkey in json_data[key].keys():
+            if subkey in err.keys() and err[subkey]:
+                if _reached_threshold(str(err[subkey]), str(json_data[key][subkey])):
                     if print_interface:
                         print(f"INTERFACE: {err.name}")
                         print_interface = False
-                    print(f"{Fore.RED}'{key}' threshold is {str(phy_err_thresh[key])} with value of {str(err[key])}{Style.RESET_ALL}")
-            except KeyError as e:
-                continue
-
-        if(fec_err.fec_ccw_count is not None):
-            for key in fec_err_thresh.keys():
-                try:
-                    if _reached_threshold(str(fec_err[key]), str(fec_err_thresh[key])):
-                        if print_interface:
-                            print(f"INTERFACE: {err.name}")
-                            print_interface = False
-                        print(f"{Fore.RED}'{key}' threshold is {str(fec_err_thresh[key])} with value of {str(fec_err[key])}{Style.RESET_ALL}")
-                except KeyError as e:
-                    continue
+                    print(f"{Fore.RED}'{subkey}' threshold is {str(json_data[key][subkey])} with value of {str(err[subkey])}{Style.RESET_ALL}")
 
         if(err.name in optics):
             optic = optics[err.name]
@@ -126,7 +121,7 @@ def bgp(dev):
         peer_state = neighbor.peer_state
         if(peer_state == "Established"):
             print(f"Local ID: {neighbor.local_id:15} Local AS: {neighbor.local_as:7} Local Address: {neighbor.local_address}\nPeer  ID: {neighbor.peer_id:15} Peer  AS: {neighbor.peer_as:7} "\
-                  f"Peer Address: {neighbor.peer_address:17}\nNum Routes Received: {neighbor.route_received:4} Local Interface: {neighbor.local_interface}\nElapsed Time(secs): {neighsumm[peer_address].elapsed_time_secs}\n")
+                  f"Peer Address: {neighbor.peer_address:17}\nNum Routes Received: {neighbor.route_received} Local Interface: {neighbor.local_interface}\nElapsed Time(secs): {neighsumm[peer_address].elapsed_time_secs}\n")
         elif(peer_state == "Active"):
             print(f"{Fore.RED}Neighbor {neighbor.peer_address} in active state, check configuration{Style.RESET_ALL}")
         elif(peer_state == "Connect"):
@@ -150,7 +145,7 @@ def logs(dev):
         scp1.get("/var/log/messages", local_path="logs/"+dev.hostname+"-messages")
     with open("logs/"+dev.hostname+"-messages") as messages:
         lines = messages.readlines()
-        ntp_color = license_color = "Fore.WHITE"
+        ntp_color = license_color = "Fore.RESET"
         for line in lines:
             if "NTP" in line and "Unreachable" in line:
                 ntp_issue = True
