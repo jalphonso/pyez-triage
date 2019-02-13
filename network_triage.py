@@ -58,8 +58,8 @@ def ints(dev):
         if optic_rx_msg or optic_tx_msg:
             if print_interface:
                 print(f"INTERFACE: {err.name}")
-                print(f"Admin State: {eth_port[err.name]['admin']}  Oper State: {eth_port[err.name]['oper']}")
                 print_interface = False
+            print(f"Admin State: {eth_port[err.name]['admin']}  Oper State: {eth_port[err.name]['oper']}")
             print(header)
             print(f"    RX Optic Power: {optic.rx_optic_power}  TX Optic Power: {optic.tx_optic_power}")
             print(f"    Module Temp: {optic.module_temperature}  Module Voltage: {optic.module_voltage}")
