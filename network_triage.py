@@ -20,6 +20,8 @@ from myTables.OpTables import EthPcsStatTable
 from myTables.OpTables import EthPortTable
 from myTables.OpTables import bgpSummaryTable
 from myTables.OpTables import bgpTable
+from pprint import pprint as pp
+
 
 def _reached_threshold(actual, threshold):
     oper, val = threshold.split()
@@ -159,10 +161,15 @@ def logs(dev):
     print(f"{Fore.YELLOW}{_create_header('end of parse syslog')}{Style.RESET_ALL}\n")
 
 
+def info(dev):
+    print(f"{Fore.YELLOW}{_create_header('begin get info (device facts)')}{Style.RESET_ALL}\n")
+    pp(dev.facts)
+    print(f"{Fore.YELLOW}{_create_header('end of get info (device facts)')}{Style.RESET_ALL}\n")
+
 def main():
     parser = argparse.ArgumentParser(description='Execute troubleshooting operation(s)')
     parser.add_argument('-o', '--oper', dest='operations', metavar='<oper>',
-                        choices=['all','ints','bgp','logs'], default=['all'],
+                        choices=['all','ints','bgp','logs','info'], default=['all'],
                         nargs='+', help='select operation(s) to run from list')
     parser.add_argument('-u', '--user', dest='user', metavar='<username>', required=True,
                         help='provide username for ssh login to devices')
@@ -179,7 +186,7 @@ def main():
 
     args = parser.parse_args()
     if args.operations == ['all']:
-        operations = ["ints", "bgp", "logs"]
+        operations = ["ints", "bgp", "logs", "info"]
     else:
         operations = args.operations
 
