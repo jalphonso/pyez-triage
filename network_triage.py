@@ -17,9 +17,9 @@ from myTables.OpTables import PortFecTable
 from myTables.OpTables import PhyPortDiagTable
 from myTables.OpTables import EthMacStatTable
 from myTables.OpTables import EthPcsStatTable
+from myTables.OpTables import EthPortTable
 from myTables.OpTables import bgpSummaryTable
 from myTables.OpTables import bgpTable
-
 
 def _reached_threshold(actual, threshold):
     oper, val = threshold.split()
@@ -56,6 +56,7 @@ def ints(dev):
         if optic_rx_msg or optic_tx_msg:
             if print_interface:
                 print(f"INTERFACE: {err.name}")
+                print(f"Admin State: {eth_port[err.name]['admin']}  Oper State: {eth_port[err.name]['oper']}")
                 print_interface = False
             print(header)
             print(f"    RX Optic Power: {optic.rx_optic_power}  TX Optic Power: {optic.tx_optic_power}")
@@ -78,6 +79,7 @@ def ints(dev):
     fec_errs = PortFecTable(dev).get()
     pcs_stats = EthPcsStatTable(dev).get()
     mac_stats = EthMacStatTable(dev).get()
+    eth_port = EthPortTable(dev).get()
 
     print(f"{Fore.YELLOW}{_create_header('begin troubleshoot interfaces')}{Style.RESET_ALL}\n")
 

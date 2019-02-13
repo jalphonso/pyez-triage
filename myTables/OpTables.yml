@@ -17,6 +17,32 @@ PortFecView:
     fec_ccw_error_rate: { fec_ccw_error_rate: int }
     fec_nccw_error_rate: { fec_nccw_error_rate: int }
 
+EthPortTable:
+  rpc: get-interface-information
+  args:
+    media: true
+    interface_name: '[fgxe][et]*'
+  args_key: interface_name
+  item: physical-interface
+  view: EthPortView
+
+EthPortView:
+  groups:
+    flags: if-device-flags
+  fields:
+    oper: oper-status
+    admin: admin-status
+    description: description
+    mtu: { mtu : int }
+    link_mode: link-mode
+    speed: speed
+    media_type: if-media-type
+    int_type: link-level-type
+    macaddr: current-physical-address
+  fields_flags:
+    running: { ifdf-running: flag }
+    present: { ifdf-present: flag }
+
 EthPcsStatTable:
   rpc: get-interface-information
   args:
