@@ -56,9 +56,9 @@ def ints(dev):
         f"    RX Optic Power: {optic.rx_optic_power}  TX Optic Power: {optic.tx_optic_power}"
         if optic_rx_msg or optic_tx_msg:
             if print_interface:
-                print(f"INTERFACE: {err.name}")
+                print(f"INTERFACE: {eth.name}")
                 print_interface = False
-            print(f"Admin State: {eth_port[err.name]['admin']}  Oper State: {eth_port[err.name]['oper']}")
+            print(f"Admin State: {eth['admin']}  Oper State: {eth['oper']}")
             print(header)
             print(f"    RX Optic Power: {optic.rx_optic_power}  TX Optic Power: {optic.tx_optic_power}")
             print(f"    Module Temp: {optic.module_temperature}  Module Voltage: {optic.module_voltage}")
@@ -80,30 +80,15 @@ def ints(dev):
     fec_errs = PortFecTable(dev).get()
     pcs_stats = EthPcsStatTable(dev).get()
     mac_stats = EthMacStatTable(dev).get()
-    eth_port = EthPortTable(dev).get()
+    eths = EthPortTable(dev).get()
 
     print(f"{Fore.YELLOW}{_create_header('begin troubleshoot interfaces')}{Style.RESET_ALL}\n")
 
-    for err in (list(phy_errs) + list(fec_errs) + list(pcs_stats) + list(mac_stats)):
-        if err.__class__.__name__ == "PortFecView":
-            key = 'fec_errs'
-        elif err.__class__.__name__ == "PhyPortErrorView":
-            key = 'phy_errs'
-        elif err.__class__.__name__ == "EthPcsStatView":
-            key = 'pcs_stats'
-        elif err.__class__.__name__ == "EthMacStatView":
-            key = 'mac_stats'
+    for eth in eths:
         print_interface = True
-        for subkey in json_data[key].keys():
-            if subkey in err.keys() and err[subkey]:
-                if _reached_threshold(str(err[subkey]), str(json_data[key][subkey])):
-                    if print_interface:
-                        print(f"INTERFACE: {err.name}")
-                        print_interface = False
-                    print(f"{Fore.RED}'{subkey}' threshold is {str(json_data[key][subkey])} with value of {str(err[subkey])}{Style.RESET_ALL}")
 
-        if(err.name in optics):
-            optic = optics[err.name]
+        if eth.name in optics:
+            optic = optics[eth.name]
             if(optic.lanes):
                 for lane in optic.lanes:
                     header = f"  Optic Diag Lane# {lane.name}:"
@@ -111,6 +96,27 @@ def ints(dev):
             elif(optic.rx_optic_power):
                 header = "  Optic Diag:"
                 print_interface = _check_optic(optic, header, print_interface)
+
+        tables = [ phy_errs, fec_errs, pcs_stats, mac_stats ]
+        for table in tables:
+            if eth.name in table:
+                row = table[eth.name]
+                if row.__class__.__name__ == "PortFecView":
+                    key = 'fec_errs'
+                elif row.__class__.__name__ == "PhyPortErrorView":
+                    key = 'phy_errs'
+                elif row.__class__.__name__ == "EthPcsStatView":
+                    key = 'pcs_stats'
+                elif row.__class__.__name__ == "EthMacStatView":
+                    key = 'mac_stats'
+
+                for subkey in json_data[key].keys():
+                    if subkey in row.keys() and row[subkey]:
+                        if _reached_threshold(str(row[subkey]), str(json_data[key][subkey])):
+                            if print_interface:
+                                print(f"INTERFACE: {eth.name}")
+                                print_interface = False
+                            print(f"  {Fore.RED}'{subkey}' threshold is {str(json_data[key][subkey])} with value of {str(row[subkey])}{Style.RESET_ALL}")
 
     print(f"{Fore.YELLOW}{_create_header('end of troubleshoot interfaces')}{Style.RESET_ALL}\n")
 
