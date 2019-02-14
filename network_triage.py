@@ -20,7 +20,6 @@ from myTables.OpTables import EthPcsStatTable
 from myTables.OpTables import EthPortTable
 from myTables.OpTables import bgpSummaryTable
 from myTables.OpTables import bgpTable
-from pprint import pprint as pp
 
 
 def _reached_threshold(actual, threshold):
@@ -163,8 +162,13 @@ def logs(dev):
 
 def info(dev):
     print(f"{Fore.YELLOW}{_create_header('begin get info (device facts)')}{Style.RESET_ALL}\n")
-    pp(dev.facts)
+    print(f"Hostname: {dev.facts['hostname']:22}Version: {dev.facts['version']}\n"
+            f"Model:    {dev.facts['model']:20}  SN:      {dev.facts['serialnumber']}")
+    print(f"RE0 Uptime: {dev.facts['RE0']['up_time']}")
+    if dev.facts['2RE']:
+        print(f"  RE1 Uptime: {dev.facts['RE1']['up_time']}")
     print(f"{Fore.YELLOW}{_create_header('end of get info (device facts)')}{Style.RESET_ALL}\n")
+
 
 def main():
     parser = argparse.ArgumentParser(description='Execute troubleshooting operation(s)')
