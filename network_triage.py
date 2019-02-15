@@ -7,6 +7,7 @@ from ansible.inventory.manager import InventoryManager
 from ansible.vars.manager import VariableManager
 from colorama import Fore
 from colorama import Style
+from datetime import datetime
 from jnpr.junos import Device
 from jnpr.junos.exception import ConnectError
 from jnpr.junos.op.phyport import PhyPortErrorTable
@@ -66,14 +67,37 @@ def ints(dev):
             _print_if_msg(optic_tx_msg)
         return print_interface
 
+    def _save_curr_run(hostname, json_dict):
+        try:
+            with open(f"counters/{hostname}_prev_run.json", "w") as f:
+                json.dump(json_dict, f)
+        except Exception as err:
+            print("Unable to save counters")
+            print(err.__class__.__name__, err)
+
+    def _get_prev_run(hostname):
+        try:
+            with open(f"counters/{hostname}_prev_run.json", "r") as f:
+                return json.load(f)
+        except Exception as err:
+            print(f"No existing counters for device {hostname}")
+            return None
 
     try:
-        with open("thresholds.json") as f:
-            json_data = json.load(f)
-    except Exception as e:
+        with open("thresholds.json", "r") as f:
+            json_thresholds = json.load(f)
+    except Exception as err:
         print("JSON load error")
         print("Skipping interface troubleshooting...")
         return
+
+    hostname = dev.facts['hostname']
+
+    json_prev_run = _get_prev_run(hostname)
+    json_curr_run = {}
+
+    timestamp = datetime.now()
+    json_curr_run['timestamp'] = timestamp.__str__()
 
     optics = PhyPortDiagTable(dev).get()
     phy_errs = PhyPortErrorTable(dev).get()
@@ -85,8 +109,8 @@ def ints(dev):
     print(f"{Fore.YELLOW}{_create_header('begin troubleshoot interfaces')}{Style.RESET_ALL}\n")
 
     for eth in eths:
+        json_curr_run[eth.name] = {}
         print_interface = True
-
         if eth.name in optics:
             optic = optics[eth.name]
             if(optic.lanes):
@@ -110,14 +134,29 @@ def ints(dev):
                 elif row.__class__.__name__ == "EthMacStatView":
                     key = 'mac_stats'
 
-                for subkey in json_data[key].keys():
+                for subkey in json_thresholds[key].keys():
                     if subkey in row.keys() and row[subkey]:
-                        if _reached_threshold(str(row[subkey]), str(json_data[key][subkey])):
+                        if _reached_threshold(str(row[subkey]), str(json_thresholds[key][subkey])):
+                            json_curr_run[eth.name][subkey] =  row[subkey]
                             if print_interface:
                                 print(f"INTERFACE: {eth.name}")
                                 print_interface = False
-                            print(f"  {Fore.RED}'{subkey}' threshold is {str(json_data[key][subkey])} with value of {str(row[subkey])}{Style.RESET_ALL}")
-
+                            print(f"  {Fore.RED}'{subkey}' threshold is {str(json_thresholds[key][subkey])} with value of {str(row[subkey])}{Style.RESET_ALL}")
+                            try:
+                                diff = row[subkey] - json_prev_run[eth.name][subkey]
+                                prevtimestamp = datetime.strptime(json_prev_run['timestamp'], '%Y-%m-%d %H:%M:%S.%f')
+                                timediff = timestamp - prevtimestamp
+                                seconds = timediff.seconds
+                                if diff !=0:
+                                    print(f"     {Fore.MAGENTA}previous value was {str(json_prev_run[eth.name][subkey])}"
+                                            f" which is a difference of {str(diff)} from the last run {seconds}s ago"
+                                            f" or about {round(diff/seconds,2):0.2f}/second"
+                                            f"{Style.RESET_ALL}")
+                            except Exception:
+                                pass
+        if not json_curr_run[eth.name]:
+            del json_curr_run[eth.name]
+    _save_curr_run(hostname, json_curr_run)
     print(f"{Fore.YELLOW}{_create_header('end of troubleshoot interfaces')}{Style.RESET_ALL}\n")
 
 
