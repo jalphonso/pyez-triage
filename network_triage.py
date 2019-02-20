@@ -10,7 +10,7 @@ from colorama import Fore
 from colorama import Style
 from datetime import datetime
 from jnpr.junos import Device
-from jnpr.junos.exception import ConnectError
+from jnpr.junos.exception import ConnectError, ProbeError
 from jnpr.junos.op.phyport import PhyPortErrorTable
 from jnpr.junos.op.bgp import bgpTable
 from jnpr.junos.utils.scp import SCP
@@ -273,12 +273,11 @@ def main():
 
         try:
             print(f"{Fore.BLUE}Conducting triage of device {hostname}{Style.RESET_ALL}")
-            with Device(host=hostname, port=netconf_port, user=args.user, passwd=passwd, ssh_config=args.ssh_config) as dev:
+            with Device(host=hostname, port=netconf_port, user=args.user, passwd=passwd, ssh_config=args.ssh_config, auto_probe=5) as dev:
                 for operation in operations:
                     globals()[operation](dev)
-        except ConnectError as err:
+        except (ProbeError, ConnectError) as err:
             print(f"Cannot connect to device: {err}")
-            sys.exit(1)
         except Exception as err:
             print(err.__class__.__name__, err)
             print("Abnormal termination")
