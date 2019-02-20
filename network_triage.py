@@ -1,6 +1,7 @@
 import argparse
 import getpass
 import json
+import os
 import sys
 from ansible.parsing.dataloader import DataLoader
 from ansible.inventory.manager import InventoryManager
@@ -59,18 +60,21 @@ def ints(dev):
             if print_interface:
                 print(f"INTERFACE: {eth.name}")
                 print_interface = False
-            print(f"Admin State: {eth['admin']}  Oper State: {eth['oper']}")
+                print(f"Admin State: {eth['admin']}  Oper State: {eth['oper']}")
             print(header)
             print(f"    RX Optic Power: {optic.rx_optic_power}  TX Optic Power: {optic.tx_optic_power}")
-            print(f"    Module Temp: {optic.module_temperature}  Module Voltage: {optic.module_voltage}")
+            print(f"    Module Temp: {phy_optic.module_temperature}  Module Voltage: {phy_optic.module_voltage}")
             _print_if_msg(optic_rx_msg)
             _print_if_msg(optic_tx_msg)
         return print_interface
 
     def _save_curr_run(hostname, json_dict):
+        fname = f"counters/{hostname}_prev_run.json"
         try:
-            with open(f"counters/{hostname}_prev_run.json", "w") as f:
+            os.remove(fname)
+            with open(fname, "w") as f:
                 json.dump(json_dict, f)
+            os.chmod(fname, 0o664)
         except Exception as err:
             print("Unable to save counters")
             print(err.__class__.__name__, err)
@@ -109,12 +113,21 @@ def ints(dev):
     print(f"{Fore.YELLOW}{_create_header('begin troubleshoot interfaces')}{Style.RESET_ALL}\n")
 
     for eth in eths:
+        if eth['admin'] == 'down':
+            print(f"{Fore.GREEN}{eth.name} is admin down, skipping remaining checks{Style.RESET_ALL}")
+            continue
         json_curr_run[eth.name] = {}
         print_interface = True
         if eth.name in optics:
             optic = optics[eth.name]
+            phy_optic = optic
             if(optic.lanes):
                 for lane in optic.lanes:
+                    #For channelized interfaces
+                    if(":" in eth.name):
+                        if(eth.name[-1] != str(lane.lane_index)):
+                            continue
+                    #Handles QSFPs as well
                     header = f"  Optic Diag Lane# {lane.name}:"
                     print_interface = _check_optic(lane, header, print_interface)
             elif(optic.rx_optic_power):
