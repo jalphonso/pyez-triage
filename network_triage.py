@@ -10,7 +10,7 @@ from colorama import Fore
 from colorama import Style
 from datetime import datetime
 from jnpr.junos import Device
-from jnpr.junos.exception import ConnectError, ProbeError
+from jnpr.junos.exception import ConnectError, ProbeError, ConnectAuthError
 from jnpr.junos.op.phyport import PhyPortErrorTable
 from jnpr.junos.op.bgp import bgpTable
 from jnpr.junos.utils.scp import SCP
@@ -229,9 +229,10 @@ def info(dev):
 
 
 def main():
+    oper_choices = ["all", "ints", "bgp", "logs", "info"]
     parser = argparse.ArgumentParser(description='Execute troubleshooting operation(s)')
     parser.add_argument('-o', '--oper', dest='operations', metavar='<oper>',
-                        choices=['all','ints','bgp','logs','info'], default=['all'],
+                        choices=oper_choices, default=['all'],
                         nargs='+', help='select operation(s) to run from list')
     parser.add_argument('-u', '--user', dest='user', metavar='<username>', required=True,
                         help='provide username for ssh login to devices')
@@ -245,10 +246,18 @@ def main():
                         required=True, help='provide ansible inventory path')
     parser.add_argument('-l', '--limit', dest='limit', metavar='<limit>',
                         help='specify host or group to run operations on')
+    parser.add_argument('-g', '--getoper', action='store_true',
+                        help='print available operations')
 
     args = parser.parse_args()
+
+    if args.getoper:
+        print(f"Valid choices for operations are: {oper_choices}")
+        sys.exit(0)
+
     if args.operations == ['all']:
-        operations = ["ints", "bgp", "logs", "info"]
+        operations = list(oper_choices)
+        operations.remove('all')
     else:
         operations = args.operations
 
@@ -262,7 +271,9 @@ def main():
     loader = DataLoader()
     inventory = InventoryManager(loader=loader, sources=args.inventory_path)
     variables = VariableManager(loader=loader, inventory=inventory)
-
+    success = 0
+    failure = 0
+    failed_hosts = []
     for host in inventory.get_hosts():
         hostname = host.get_name()
         if args.limit:
@@ -272,16 +283,28 @@ def main():
         netconf_port = variables.get_vars(host=host)['netconf_port']
 
         try:
-            print(f"{Fore.BLUE}Conducting triage of device {hostname}{Style.RESET_ALL}")
+            print(f"{Fore.BLUE}{Style.BRIGHT}Conducting triage of device {hostname}{Style.RESET_ALL}")
             with Device(host=hostname, port=netconf_port, user=args.user, passwd=passwd, ssh_config=args.ssh_config, auto_probe=5) as dev:
                 for operation in operations:
                     globals()[operation](dev)
-        except (ProbeError, ConnectError) as err:
-            print(f"Cannot connect to device: {err}")
-        except Exception as err:
-            print(err.__class__.__name__, err)
-            print("Abnormal termination")
+            success = success + 1
+        except ConnectAuthError as err:
+            print(f"{Fore.RED}Unable to login. Check username/password: {err}")
+            print(f"Exiting so you don't lock yourself out :){Style.RESET_ALL}")
             sys.exit(1)
+        except (ProbeError, ConnectError) as err:
+            print(f"{Fore.RED}Cannot connect to device: {err}\nMake sure device is reachable and {Style.BRIGHT}'set system services netconf ssh'{Style.NORMAL} is set{Style.RESET_ALL}")
+            failure = failure + 1
+            failed_hosts.append(hostname)
+        except Exception as err:
+            print(f"{Fore.RED}Abnormal termination: {err.__class__.__name__, err}{Style.RESET_ALL}")
+            sys.exit(1)
+    if success > 0:
+        print(f"{Fore.GREEN}Successfully connected to: {success} device(s){Style.RESET_ALL}")
+    if failure > 0:
+        print(f"{Fore.RED}Failed to connect to {failure} device(s)\nFailed Hosts: {failed_hosts}{Style.RESET_ALL}")
+    if not success and not failure:
+        print(f"{Fore.RED}No Hosts/Groups matched limit '{args.limit}'{Style.RESET_ALL}")
 
 
 if __name__ == "__main__":
