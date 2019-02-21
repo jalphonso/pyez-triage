@@ -2,6 +2,7 @@ import argparse
 import getpass
 import json
 import os
+import re
 import sys
 from ansible.parsing.dataloader import DataLoader
 from ansible.inventory.manager import InventoryManager
@@ -289,10 +290,24 @@ def main():
     success = 0
     failure = 0
     failed_hosts = []
+    limit = args.limit
+    if limit:
+        if "*" in limit:
+            limit = limit.replace("*", ".*")
+        elif "?" in limit:
+            limit = limit.replace("?", ".")
+        limit = "^" + limit
     for host in inventory.get_hosts():
         hostname = host.get_name()
-        if args.limit:
-            if not args.limit in [str(g) for g in host.get_groups()] and not args.limit == hostname:
+        match = False
+        if limit:
+            if re.search(limit, hostname):
+                match = True
+            else:
+                for group in (str(g) for g in host.get_groups()):
+                    if re.search(limit, group):
+                        match = True
+            if not match:
                 continue
 
         netconf_port = variables.get_vars(host=host)['netconf_port']
