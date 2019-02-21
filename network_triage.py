@@ -19,6 +19,7 @@ from myTables.OpTables import PortFecTable
 from myTables.OpTables import PhyPortDiagTable
 from myTables.OpTables import EthMacStatTable
 from myTables.OpTables import EthPcsStatTable
+from myTables.OpTables import EthPortExtTable
 from myTables.OpTables import EthPortTable
 from myTables.OpTables import bgpSummaryTable
 from myTables.OpTables import bgpTable
@@ -44,6 +45,14 @@ def _print_if_msg(msg):
 
 def ints(dev):
 
+    def print_interface_header():
+        if ae:
+            print(f"INTERFACE: {eth.name} which is part of ae bundle {ae}")
+        else:
+            print(f"INTERFACE: {eth.name}")
+        if eth.description:
+            print(f"Description: {eth.description}")
+
     def _check_optic(optic, header, print_interface):
         optic_rx_msg = optic_tx_msg = ""
         if(optic.rx_power_low_alarm or optic.rx_power_high_alarm):
@@ -58,7 +67,7 @@ def ints(dev):
         f"    RX Optic Power: {optic.rx_optic_power}  TX Optic Power: {optic.tx_optic_power}"
         if optic_rx_msg or optic_tx_msg:
             if print_interface:
-                print(f"INTERFACE: {eth.name}")
+                print_interface_header()
                 print_interface = False
                 print(f"Admin State: {eth['admin']}  Oper State: {eth['oper']}")
             print(header)
@@ -109,6 +118,7 @@ def ints(dev):
     pcs_stats = EthPcsStatTable(dev).get()
     mac_stats = EthMacStatTable(dev).get()
     eths = EthPortTable(dev).get()
+    eth_exts = EthPortExtTable(dev).get()
 
     print(f"{Fore.YELLOW}{_create_header('begin troubleshoot interfaces')}{Style.RESET_ALL}\n")
 
@@ -116,6 +126,11 @@ def ints(dev):
         if eth['admin'] == 'down':
             print(f"{Fore.GREEN}{eth.name} is admin down, skipping remaining checks{Style.RESET_ALL}")
             continue
+        logicals = eth_exts[eth.name].logical
+        ae = None
+        for logical in logicals:
+            if logical.address_family_name == "aenet":
+                ae = logical.ae_bundle_name
         json_curr_run[eth.name] = {}
         print_interface = True
         if eth.name in optics:
@@ -152,7 +167,7 @@ def ints(dev):
                         if _reached_threshold(str(row[subkey]), str(json_thresholds[key][subkey])):
                             json_curr_run[eth.name][subkey] =  row[subkey]
                             if print_interface:
-                                print(f"INTERFACE: {eth.name}")
+                                print_interface_header()
                                 print_interface = False
                             print(f"  {Fore.RED}'{subkey}' threshold is {str(json_thresholds[key][subkey])} with value of {str(row[subkey])}{Style.RESET_ALL}")
                             try:

@@ -43,6 +43,31 @@ EthPortView:
     running: { ifdf-running: flag }
     present: { ifdf-present: flag }
 
+EthPortExtTable:
+  rpc: get-interface-information
+  args:
+    extensive: true
+    interface_name: '[fgxe][et]*'
+  args_key: interface_name
+  item: physical-interface
+  view: EthPortExtView
+
+EthPortExtView:
+  fields:
+    logical: _EthPortExtLogicalTable
+
+_EthPortExtLogicalTable:
+  item: logical-interface
+  key: name
+  view: _EthPortExtLogicalView
+
+_EthPortExtLogicalView:
+  groups:
+    address_family: address-family
+  fields_address_family:
+    address_family_name: address-family-name
+    ae_bundle_name: ae-bundle-name
+
 EthPcsStatTable:
   rpc: get-interface-information
   args:
