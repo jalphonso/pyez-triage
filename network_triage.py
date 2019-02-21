@@ -24,6 +24,7 @@ from myTables.OpTables import EthPortExtTable
 from myTables.OpTables import EthPortTable
 from myTables.OpTables import bgpSummaryTable
 from myTables.OpTables import bgpTable
+from pathlib import Path
 
 
 def _reached_threshold(actual, threshold):
@@ -81,7 +82,9 @@ def ints(dev):
     def _save_curr_run(hostname, json_dict):
         fname = f"counters/{hostname}_prev_run.json"
         try:
-            os.remove(fname)
+            prevfile = Path(fname)
+            if prevfile.is_file():
+                os.remove(fname)
             with open(fname, "w") as f:
                 json.dump(json_dict, f)
             os.chmod(fname, 0o664)
