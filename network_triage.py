@@ -16,7 +16,7 @@ from jnpr.junos.op.bgp import bgpTable
 from jnpr.junos.utils.scp import SCP
 from math import floor, ceil
 from myTables.OpTables import (PortFecTable, PhyPortDiagTable, EthMacStatTable, EthPcsStatTable,
-                                                EthPortExtTable, EthPortTable, bgpSummaryTable, bgpTable)
+                               EthPortExtTable, EthPortTable, bgpSummaryTable, bgpTable)
 from pathlib import Path
 
 
@@ -59,7 +59,6 @@ def ints(dev):
         optic.tx_power_high_alarm or optic.tx_power_low_alarm or
         optic.tx_power_high_warn or optic.tx_power_low_warn):
             optic_tx_msg = f"{Fore.RED}  **Transmit Problems. Please check SFP.**{Style.RESET_ALL}"
-        f"    RX Optic Power: {optic.rx_optic_power}  TX Optic Power: {optic.tx_optic_power}"
         if optic_rx_msg or optic_tx_msg:
             if print_interface:
                 print_interface_header()
@@ -166,7 +165,8 @@ def ints(dev):
                             if print_interface:
                                 print_interface_header()
                                 print_interface = False
-                            print(f"  {Fore.RED}'{subkey}' threshold is {str(json_thresholds[key][subkey])} with value of {str(row[subkey])}{Style.RESET_ALL}")
+                            print(f"  {Fore.RED}'{subkey}' threshold is {str(json_thresholds[key][subkey])}"
+                                  f" with value of {str(row[subkey])}{Style.RESET_ALL}")
                             try:
                                 diff = row[subkey] - json_prev_run[eth.name][subkey]
                                 prevtimestamp = datetime.strptime(json_prev_run['timestamp'], '%Y-%m-%d %H:%M:%S.%f')
@@ -193,16 +193,21 @@ def bgp(dev):
         peer_address = neighbor.peer_address.split("+")[0]
         peer_state = neighbor.peer_state
         if(peer_state == "Established"):
-            print(f"Local ID: {neighbor.local_id:15} Local AS: {neighbor.local_as:7} Local Address: {neighbor.local_address}\nPeer  ID: {neighbor.peer_id:15} Peer  AS: {neighbor.peer_as:7} "\
-                  f"Peer Address: {neighbor.peer_address:17}\nNum Routes Received: {neighbor.route_received} Local Interface: {neighbor.local_interface}\nElapsed Time(secs): {neighsumm[peer_address].elapsed_time_secs}\n")
+            print(f"Local ID: {neighbor.local_id:15} Local AS: {neighbor.local_as:7} "
+                  f"Local Address: {neighbor.local_address}\nPeer  ID: {neighbor.peer_id:15} "
+                  f"Peer  AS: {neighbor.peer_as:7} Peer Address: {neighbor.peer_address:17}\n"
+                  f"Num Routes Received: {neighbor.route_received} Local Interface: {neighbor.local_interface}\n"
+                  f"Elapsed Time(secs): {neighsumm[peer_address].elapsed_time_secs}\n")
         elif(peer_state == "Active"):
             print(f"{Fore.RED}Neighbor {neighbor.peer_address} in active state, check configuration{Style.RESET_ALL}")
         elif(peer_state == "Connect"):
-            print(f"{Fore.RED}Neighbor {neighbor.peer_address} in connect state, check protocol configuration{Style.RESET_ALL}")
+            print(f"{Fore.RED}Neighbor {neighbor.peer_address} in connect state, check protocol configuration"
+                  f"{Style.RESET_ALL}")
         elif(peer_state == "Idle"):
             print(f"{Fore.RED}Neighbor {neighbor.peer_address} in idle state, check reachability{Style.RESET_ALL}")
         else:
-            print(f"{Fore.RED}Unxpected state of {peer_state}. Neighbor {neighbor.peer_address} may be in transition, rerun command in a few seconds{Style.RESET_ALL}")
+            print(f"{Fore.RED}Unxpected state of {peer_state}. Neighbor {neighbor.peer_address} may be in transition,"
+                  f"rerun command in a few seconds{Style.RESET_ALL}")
 
     print(f"{Fore.YELLOW}{_create_header('end of troubleshoot bgp')}{Style.RESET_ALL}\n")
 
@@ -226,7 +231,8 @@ def logs(dev):
             elif "License" in line:
                 license_issue = True
                 license_color = "Fore.RED"
-    print(f"{eval(ntp_color)}ntp_issue: {ntp_issue}{Style.RESET_ALL}, {eval(license_color)}license_issue: {license_issue}{Style.RESET_ALL}\n")
+    print(f"{eval(ntp_color)}ntp_issue: {ntp_issue}{Style.RESET_ALL}, {eval(license_color)}license_issue: "
+          f"{license_issue}{Style.RESET_ALL}\n")
     print(f"{Fore.YELLOW}{_create_header('end of parse syslog')}{Style.RESET_ALL}\n")
 
 
@@ -310,7 +316,8 @@ def main():
 
         try:
             print(f"{Fore.BLUE}{Style.BRIGHT}Conducting triage of device {hostname}{Style.RESET_ALL}")
-            with Device(host=hostname, port=netconf_port, user=args.user, passwd=passwd, ssh_config=args.ssh_config, auto_probe=5) as dev:
+            with Device(host=hostname, port=netconf_port, user=args.user, passwd=passwd, ssh_config=args.ssh_config,
+                        auto_probe=5) as dev:
                 for operation in operations:
                     globals()[operation](dev)
             success = success + 1
@@ -319,7 +326,8 @@ def main():
             print(f"Exiting so you don't lock yourself out :){Style.RESET_ALL}")
             sys.exit(1)
         except (ProbeError, ConnectError) as err:
-            print(f"{Fore.RED}Cannot connect to device: {err}\nMake sure device is reachable and {Style.BRIGHT}'set system services netconf ssh'{Style.NORMAL} is set{Style.RESET_ALL}")
+            print(f"{Fore.RED}Cannot connect to device: {err}\nMake sure device is reachable and {Style.BRIGHT}"
+                  f"'set system services netconf ssh'{Style.NORMAL} is set{Style.RESET_ALL}")
             failure = failure + 1
             failed_hosts.append(hostname)
         except Exception as err:
