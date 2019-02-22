@@ -7,8 +7,7 @@ import sys
 from ansible.parsing.dataloader import DataLoader
 from ansible.inventory.manager import InventoryManager
 from ansible.vars.manager import VariableManager
-from colorama import Fore
-from colorama import Style
+from colorama import Fore, Style
 from datetime import datetime
 from jnpr.junos import Device
 from jnpr.junos.exception import ConnectError, ProbeError, ConnectAuthError
@@ -16,14 +15,8 @@ from jnpr.junos.op.phyport import PhyPortErrorTable
 from jnpr.junos.op.bgp import bgpTable
 from jnpr.junos.utils.scp import SCP
 from math import floor, ceil
-from myTables.OpTables import PortFecTable
-from myTables.OpTables import PhyPortDiagTable
-from myTables.OpTables import EthMacStatTable
-from myTables.OpTables import EthPcsStatTable
-from myTables.OpTables import EthPortExtTable
-from myTables.OpTables import EthPortTable
-from myTables.OpTables import bgpSummaryTable
-from myTables.OpTables import bgpTable
+from myTables.OpTables import (PortFecTable, PhyPortDiagTable, EthMacStatTable, EthPcsStatTable,
+                                                EthPortExtTable, EthPortTable, bgpSummaryTable, bgpTable)
 from pathlib import Path
 
 
