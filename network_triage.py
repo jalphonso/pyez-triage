@@ -217,21 +217,11 @@ def logs(dev):
 
     ntp_issue = False
     license_issue=False
-
-    fname = f"logs/{dev.hostname}-messages"
-    try:
-        prevfile = Path(fname)
-        if prevfile.is_file():
-            os.remove(fname)
-    except Exception as err:
-        print(f"Unable to delete old logs for {dev.hostname}")
-        print(err.__class__.__name__, err)
+    fname = f"{dev.hostname}-messages"
 
     print("Transferring /var/log/messages from device")
     with SCP(dev, progress=True) as scp1:
         scp1.get("/var/log/messages", local_path=fname)
-        os.chmod(fname, 0o664)
-
     with open(fname) as messages:
         lines = messages.readlines()
         ntp_color = license_color = "Fore.RESET"
@@ -242,6 +232,12 @@ def logs(dev):
             elif "License" in line:
                 license_issue = True
                 license_color = "Fore.RED"
+    try:
+        os.remove(fname)
+    except Exception as err:
+        print(f"Unable to delete old log file for {fname}")
+        print(err.__class__.__name__, err)
+
     print(f"{eval(ntp_color)}ntp_issue: {ntp_issue}{Style.RESET_ALL}, {eval(license_color)}license_issue: "
           f"{license_issue}{Style.RESET_ALL}\n")
     print(f"{Fore.YELLOW}{_create_header('end of parse syslog')}{Style.RESET_ALL}\n")
