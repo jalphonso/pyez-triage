@@ -309,16 +309,15 @@ def main():
             limit = limit.replace("*", ".*")
         elif "?" in limit:
             limit = limit.replace("?", ".")
-        limit = "^" + limit
     for host in inventory.get_hosts():
         hostname = host.get_name()
         match = False
         if limit:
-            if re.search(limit, hostname):
+            if re.match(limit, hostname):
                 match = True
             else:
                 for group in (str(g) for g in host.get_groups()):
-                    if re.search(limit, group):
+                    if re.match(limit, group):
                         match = True
             if not match:
                 continue
