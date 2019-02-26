@@ -218,10 +218,21 @@ def logs(dev):
     ntp_issue = False
     license_issue=False
 
+    fname = f"logs/{dev.hostname}-messages"
+    try:
+        prevfile = Path(fname)
+        if prevfile.is_file():
+            os.remove(fname)
+    except Exception as err:
+        print(f"Unable to delete old logs for {dev.hostname}")
+        print(err.__class__.__name__, err)
+
     print("Transferring /var/log/messages from device")
     with SCP(dev, progress=True) as scp1:
-        scp1.get("/var/log/messages", local_path="logs/"+dev.hostname+"-messages")
-    with open("logs/"+dev.hostname+"-messages") as messages:
+        scp1.get("/var/log/messages", local_path=fname)
+        os.chmod(fname, 0o664)
+
+    with open(fname) as messages:
         lines = messages.readlines()
         ntp_color = license_color = "Fore.RESET"
         for line in lines:
