@@ -252,14 +252,57 @@ def info(dev):
         print(f"  RE1 Uptime: {dev.facts['RE1']['up_time']}")
     print(f"{Fore.YELLOW}{_create_header('end of get info (device facts)')}{Style.RESET_ALL}\n")
 
+def _validate_input(prompt, input_type=str, input_min=None, input_max=None):
+    max_tries = 5
+    tries = 0
+    while True and tries < max_tries:
+        user_input = input(prompt).strip()
+        if not user_input:
+            print("Input cannot be blank, please try again")
+        elif input_type == int:
+            try:
+                user_input = int(user_input)
+            except ValueError:
+                print("Input needs to be an integer, please try again")
+                tries +=1
+                continue
+            if input_min and input_max and input_min < input_max:
+                if user_input < input_min or user_input > input_max:
+                    print(f"Input needs to between {input_min} and {input_max}, please try again")
+                else:
+                    break
+            elif input_min and user_input < input_min :
+                print(f"Input needs to be greater than or equal to {input_min}, please try again")
+            elif input_max and user_input > input_max :
+                print(f"Input needs to be less than or equal to {input_max}, please try again")
+            else:
+                break
+        elif input_type == bool:
+            bool_char = user_input.lower()
+            if bool_char == 'y' or bool_char == 'yes':
+                user_input = True
+                break
+            elif bool_char == 'n' or bool_char == 'no':
+                user_input = False
+                break
+            else:
+                print(f"Input needs to be yes/no or y/n, please try again")
+        else:
+            break
+        tries +=1
+    if tries == max_tries:
+        print("Reached maximum attempts to validate input, quitting...")
+        sys.exit(1)
+    return user_input
+
 
 def main():
     oper_choices = ["all", "ints", "bgp", "logs", "info"]
     parser = argparse.ArgumentParser(description='Execute troubleshooting operation(s)')
     parser.add_argument('-o', '--oper', dest='operations', metavar='<oper>',
-                        choices=oper_choices, default=['all'],
-                        nargs='+', help='select operation(s) to run from list')
-    parser.add_argument('-u', '--user', dest='user', metavar='<username>', required=True,
+                        choices=oper_choices, nargs='+',
+                        help='select operation(s) to run from list')
+    parser.add_argument('-u', '--user', dest='user', metavar='<username>',
                         help='provide username for ssh login to devices')
     parser.add_argument('-p', '--pass', dest='passwd', metavar='<password>',
                         help='provide ssh password or passphrase')
@@ -268,43 +311,104 @@ def main():
     parser.add_argument('-c', '--config', dest='ssh_config', metavar='<ssh_config>', default='',
                         help='provide ssh config path')
     parser.add_argument('-i', '--inventory', dest='inventory_path', metavar='<inventory_path>',
-                        required=True, help='provide ansible inventory path')
+                        help='provide ansible inventory path')
     parser.add_argument('-l', '--limit', dest='limit', metavar='<limit>',
                         help='specify host or group to run operations on')
-    parser.add_argument('-g', '--getoper', action='store_true',
-                        help='print available operations')
 
     args = parser.parse_args()
 
-    if args.getoper:
-        print(f"Valid choices for operations are: {oper_choices}")
-        sys.exit(0)
+    print(f"{Fore.YELLOW}Welcome to the Python troubleshooting script for Junos boxes using PyEZ{Style.RESET_ALL}")
+    if not args.user and not args.inventory_path and not args.operations:
+        if _validate_input("Would you like to print the command line help? (y/n) "
+                           "(type n to continue in interactive mode) ", bool):
+            parser.print_help()
+            sys.exit(0)
 
-    if args.operations == ['all']:
+    if not args.user:
+        user = _validate_input("Enter your username: ")
+
+    if args.passwd:
+        passwd = args.passwd
+    elif not args.nopass:
+        tries = 0
+        while True and tries < 5:
+            passwd = getpass.getpass("Enter your password: ").strip()
+            if passwd:
+                passwd_confirm = getpass.getpass("Confirm your password: ").strip()
+                if passwd == passwd_confirm:
+                    break
+                else:
+                    print("Passwords do not match, please try again...")
+            else:
+                print("Password cannot be blank, please try again...")
+            tries +=1
+        if tries == 5:
+            print("Reached maximum attempts to validate password, quitting...")
+        sys.exit(1)
+    else:
+        passwd = None
+
+    if not args.inventory_path:
+        inventory_dir = Path("inventory")
+        inventory_choices =[x for x in inventory_dir.iterdir() if x.is_dir()]
+        inventory_choices.sort()
+        print("\nAvailable Datacenters:")
+        for idx, choice in enumerate(inventory_choices):
+            print(f"{idx+1}: {choice}")
+        choice = _validate_input("\nSelect Datacenter (Type Number only and press Enter):", int, 1,
+                                 inventory_choices.__len__())
+        datacenter = inventory_choices[choice - 1].as_posix()
+        print(f"Datacenter {datacenter} selected")
+    else:
+        datacenter = args.inventory_path
+
+    if not args.limit:
+        if _validate_input("Do you want to limit the execution to a specific set of hosts or groups? (y/n) ", bool):
+            limit = _validate_input("Wildcard matching is supported like * and ? or [1-6] or [a:d] "
+                                    "i.e. qfx5?00-[a:d] or qfx5100*\nEnter your limit: ")
+    else:
+        limit = args.limit
+
+    if not args.operations:
+        operations = []
+        while True:
+            if oper_choices:
+                print("Operations available to run:")
+            else:
+                break
+            for idx, choice in enumerate(oper_choices):
+                print(f"{idx+1}: {choice}")
+            choice = _validate_input("Select operation:", int, 1, oper_choices.__len__())
+            operation = oper_choices[choice - 1]
+            if operation == 'all':
+                oper_choices.remove('all')
+                operations.extend(oper_choices)
+                break
+            operations.append(operation)
+            oper_choices.remove(operation)
+            print(f"Operation(s) {operation} selected")
+            if not _validate_input("Would you like to select another operation? ", bool):
+                break
+        print(f"List of operations selected are {operations}")
+    elif args.operations == ['all']:
         operations = list(oper_choices)
         operations.remove('all')
     else:
         operations = args.operations
 
-    if args.passwd:
-        passwd = args.passwd
-    elif not args.nopass:
-        passwd = getpass.getpass("Enter your password: ")
-    else:
-        passwd = None
-
     loader = DataLoader()
-    inventory = InventoryManager(loader=loader, sources=args.inventory_path)
+    inventory = InventoryManager(loader=loader, sources=datacenter)
     variables = VariableManager(loader=loader, inventory=inventory)
     success = 0
     failure = 0
     failed_hosts = []
-    limit = args.limit
     if limit:
         if "*" in limit:
             limit = limit.replace("*", ".*")
-        elif "?" in limit:
+        if "?" in limit:
             limit = limit.replace("?", ".")
+        if ":" in limit:
+            limit = limit.replace(":", "-")
     for host in inventory.get_hosts():
         hostname = host.get_name()
         match = False
@@ -325,7 +429,12 @@ def main():
             with Device(host=hostname, port=netconf_port, user=args.user, passwd=passwd, ssh_config=args.ssh_config,
                         auto_probe=5) as dev:
                 for operation in operations:
-                    globals()[operation](dev)
+                    if callable(globals()[operation]) and not operation.startswith('_'):
+                        globals()[operation](dev)
+                    else:
+                        print(f"{Fore.RED}Invalid operation: '{operation}'\nProblem with code. Make sure oper_choices "
+                              f"matches the public(no leading underscore) function names{Style.RESET_ALL}")
+                        sys.exit(2)
             success = success + 1
         except ConnectAuthError as err:
             print(f"{Fore.RED}Unable to login. Check username/password: {err}")
