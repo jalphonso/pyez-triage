@@ -366,6 +366,8 @@ def main():
         if _validate_input("Do you want to limit the execution to a specific set of hosts or groups? (y/n) ", bool):
             limit = _validate_input("Wildcard matching is supported like * and ? or [1-6] or [a:d] "
                                     "i.e. qfx5?00-[a:d] or qfx5100*\nEnter your limit: ")
+        else:
+            limit = None
     else:
         limit = args.limit
 
