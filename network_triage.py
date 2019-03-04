@@ -75,8 +75,11 @@ def ints(dev):
         fname = f"counters/{hostname}_prev_run.json"
         try:
             prevfile = Path(fname)
-            if prevfile.is_file():
-                os.remove(fname)
+            if prevfile.exists():
+                if prevfile.is_file():
+                    os.remove(fname)
+                elif prevfile.is_dir():
+                    os.rmdir(fname)
             with open(fname, "w") as f:
                 json.dump(json_dict, f)
             os.chmod(fname, 0o664)
