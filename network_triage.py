@@ -329,6 +329,8 @@ def main():
 
     if not args.user:
         user = _validate_input("Enter your username: ")
+    else:
+        user = args.user
 
     if args.passwd:
         passwd = args.passwd
@@ -431,7 +433,7 @@ def main():
 
         try:
             print(f"{Fore.BLUE}{Style.BRIGHT}Conducting triage of device {hostname}{Style.RESET_ALL}")
-            with Device(host=hostname, port=netconf_port, user=args.user, passwd=passwd, ssh_config=args.ssh_config,
+            with Device(host=hostname, port=netconf_port, user=user, passwd=passwd, ssh_config=args.ssh_config,
                         auto_probe=5) as dev:
                 for operation in operations:
                     if callable(globals()[operation]) and not operation.startswith('_'):
@@ -458,7 +460,7 @@ def main():
     if failure > 0:
         print(f"{Fore.RED}Failed to connect to {failure} device(s)\nFailed Hosts: {failed_hosts}{Style.RESET_ALL}")
     if not success and not failure:
-        print(f"{Fore.RED}No Hosts/Groups matched limit '{args.limit}'{Style.RESET_ALL}")
+        print(f"{Fore.RED}No Hosts/Groups matched limit '{limit}'{Style.RESET_ALL}")
 
 
 if __name__ == "__main__":
