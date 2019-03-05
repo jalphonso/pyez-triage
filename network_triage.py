@@ -46,7 +46,9 @@ def ints(dev):
         else:
             print(f"INTERFACE: {eth.name}")
         if eth.description:
-            print(f"Description: {eth.description}")
+            print(f"  Description: {eth.description}")
+        if lldp_print_string:
+            print(lldp_print_string)
 
     def _check_optic(optic, header, print_interface):
         optic_rx_msg = optic_tx_msg = ""
@@ -125,13 +127,42 @@ def ints(dev):
         if eth['admin'] == 'down':
             print(f"{Fore.GREEN}{eth.name} is admin down, skipping remaining checks{Style.RESET_ALL}")
             continue
+
+        #Retreive AE info if exists to later print out for user along with Interface name
         logicals = eth_exts[eth.name].logical
         ae = None
         for logical in logicals:
             if logical.address_family_name == "aenet":
                 ae = logical.ae_bundle_name
+
+        #Gather LLDP info via RPC calls
+        #Support Non-ELS RPC call
+        if dev.facts['switch_style'] == 'VLAN':
+            lldp = dev.rpc.get_lldp_interface_neighbors_information(interface_name=eth.name)
+        #Support ELS RPC call
+        else:
+            lldp = dev.rpc.get_lldp_interface_neighbors(interface_device=eth.name)
+
+        lldp_print_string = ""
+        #Future Warning said to use __len__ method instead of the boolean value
+        if lldp.__len__() > 0:
+            lldp_neigh_sys = lldp.xpath('//lldp-remote-system-name')[0].text
+            lldp_if_type = lldp.xpath('//lldp-remote-port-id-subtype')[0].text
+            lldp_neigh_if = lldp.xpath('//lldp-remote-port-id')[0].text
+            lldp_neigh_if_desc = lldp.xpath('//lldp-remote-port-description')[0].text
+            lldp_print_string = f"  LLDP Neighbor Name: {lldp_neigh_sys}"
+            if lldp_if_type == 'Interface name':
+                lldp_print_string = lldp_print_string + f"  Remote Iface: {lldp_neigh_if}"
+            if lldp_neigh_if != lldp_neigh_if_desc:
+                lldp_print_string = lldp_print_string + f"  Remote Iface Descr: {lldp_neigh_if_desc}"
+
+        #Initialze empty dict for json structure to be written later. Must initialize each element/sub-element
         json_curr_run[eth.name] = {}
+
+        #Controls when we print the interface header
         print_interface = True
+
+        #Optics related code if interface is an optic
         if eth.name in optics:
             optic = optics[eth.name]
             phy_optic = optic
@@ -148,6 +179,8 @@ def ints(dev):
                 header = "  Optic Diag:"
                 print_interface = _check_optic(optic, header, print_interface)
 
+        #Using the main list of interfaces we use the interface name as the key for each of the tables below
+        #This way we can resuse the same thresholds lookup code mechanism in place
         tables = [ phy_errs, fec_errs, pcs_stats, mac_stats ]
         for table in tables:
             if eth.name in table:
@@ -161,6 +194,7 @@ def ints(dev):
                 elif row.__class__.__name__ == "EthMacStatView":
                     key = 'mac_stats'
 
+                #Always make sure key exists and contains a truthy value
                 for subkey in json_thresholds[key].keys():
                     if subkey in row.keys() and row[subkey]:
                         if _reached_threshold(str(row[subkey]), str(json_thresholds[key][subkey])):
@@ -170,6 +204,8 @@ def ints(dev):
                                 print_interface = False
                             print(f"  {Fore.RED}'{subkey}' threshold is {str(json_thresholds[key][subkey])}"
                                   f" with value of {str(row[subkey])}{Style.RESET_ALL}")
+
+                            #Load values from previous run if available and print difference to user if any
                             try:
                                 diff = row[subkey] - json_prev_run[eth.name][subkey]
                                 prevtimestamp = datetime.strptime(json_prev_run['timestamp'], '%Y-%m-%d %H:%M:%S.%f')
@@ -182,6 +218,8 @@ def ints(dev):
                                             f"{Style.RESET_ALL}")
                             except Exception:
                                 pass
+
+        #Delete Interface from json struct if no thresholds were violated (Remove empty dict)
         if not json_curr_run[eth.name]:
             del json_curr_run[eth.name]
     _save_curr_run(hostname, json_curr_run)
