@@ -347,7 +347,7 @@ def main():
             tries +=1
         if tries == 5:
             print("Reached maximum attempts to validate password, quitting...")
-        sys.exit(1)
+            sys.exit(1)
     else:
         passwd = None
 
