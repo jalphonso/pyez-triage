@@ -110,7 +110,7 @@ def ints(dev):
     json_prev_run = _get_prev_run(hostname)
     json_curr_run = {}
 
-    timestamp = datetime.now()
+    timestamp = datetime.utcnow()
     json_curr_run['timestamp'] = timestamp.__str__()
 
     optics = PhyPortDiagTable(dev).get()
