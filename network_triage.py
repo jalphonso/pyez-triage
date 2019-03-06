@@ -400,9 +400,9 @@ def main():
             print(f"{idx+1}: {choice.name}")
         user_choice = _validate_input("\nSelect Datacenter (Type Number only and press Enter):", int, 1,
                                  inventory_choices.__len__())
-        dc_obj = inventory_choices[user_choice - 1]
-        datacenter = dc_obj.as_posix()
-        print(f"Datacenter {dc_obj.name} selected")
+        choice = inventory_choices[user_choice - 1]
+        datacenter = choice.as_posix()
+        print(f"Datacenter {choice.name} selected")
     else:
         datacenter = args.inventory_path
     #Ensure inventory path exists. Safeguard mainly when user provides path via cmd line
