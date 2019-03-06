@@ -397,13 +397,18 @@ def main():
         inventory_choices.sort()
         print("\nAvailable Datacenters:")
         for idx, choice in enumerate(inventory_choices):
-            print(f"{idx+1}: {choice}")
-        choice = _validate_input("\nSelect Datacenter (Type Number only and press Enter):", int, 1,
+            print(f"{idx+1}: {choice.name}")
+        user_choice = _validate_input("\nSelect Datacenter (Type Number only and press Enter):", int, 1,
                                  inventory_choices.__len__())
-        datacenter = inventory_choices[choice - 1].as_posix()
-        print(f"Datacenter {datacenter} selected")
+        dc_obj = inventory_choices[user_choice - 1]
+        datacenter = dc_obj.as_posix()
+        print(f"Datacenter {dc_obj.name} selected")
     else:
         datacenter = args.inventory_path
+    #Ensure inventory path exists. Safeguard mainly when user provides path via cmd line
+    if not Path(datacenter).exists():
+        print(f"Inventory Path '{datacenter}' does not exist. quitting...")
+        sys.exit(1)
 
     if not args.limit:
         if _validate_input("Do you want to limit the execution to a specific set of hosts or groups? (y/n) ", bool):
@@ -413,8 +418,8 @@ def main():
             limit = None
     else:
         limit = args.limit
-    #Allows user to specify None on the cmd line to bypass prompt and skip limit
-    if limit.lower() == 'none':
+    #Allows user to specify None on the bypass prompt and skip limit (intended to keep cmd line non-interactive)
+    if limit and limit.lower() == 'none':
         limit = None
 
     if not args.operations:
@@ -501,7 +506,11 @@ def main():
     if failure > 0:
         print(f"{Fore.RED}Failed to connect to {failure} device(s)\nFailed Hosts: {failed_hosts}{Style.RESET_ALL}")
     if not success and not failure:
-        print(f"{Fore.RED}No Hosts/Groups matched limit '{limit}'{Style.RESET_ALL}")
+        if limit:
+            print(f"{Fore.RED}No Hosts/Groups matched limit '{limit}' in Inventory Path '{datacenter}'"
+                  f"{Style.RESET_ALL}")
+        else:
+            print(f"{Fore.RED}No Hosts/Groups found in Inventory Path '{datacenter}'{Style.RESET_ALL}")
 
 
 if __name__ == "__main__":
