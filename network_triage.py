@@ -413,6 +413,9 @@ def main():
             limit = None
     else:
         limit = args.limit
+    #Allows user to specify None on the cmd line to bypass prompt and skip limit
+    if limit.lower() == 'none':
+        limit = None
 
     if not args.operations:
         operations = []
