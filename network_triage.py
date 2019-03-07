@@ -150,15 +150,27 @@ def ints(dev, ifaces=None):
         lldp_print_string = ""
         #Future Warning said to use __len__ method instead of the boolean value
         if lldp.__len__() > 0:
-            lldp_neigh_sys = lldp.xpath('//lldp-remote-system-name')[0].text
-            lldp_if_type = lldp.xpath('//lldp-remote-port-id-subtype')[0].text
-            lldp_neigh_if = lldp.xpath('//lldp-remote-port-id')[0].text
-            lldp_neigh_if_desc = lldp.xpath('//lldp-remote-port-description')[0].text
-            lldp_print_string = f"  LLDP Neighbor Name: {lldp_neigh_sys}"
-            if lldp_if_type == 'Interface name':
-                lldp_print_string = lldp_print_string + f"  Remote Iface: {lldp_neigh_if}"
-            if lldp_neigh_if != lldp_neigh_if_desc:
-                lldp_print_string = lldp_print_string + f"  Remote Iface Descr: {lldp_neigh_if_desc}"
+
+            lldp_neigh_sys = lldp.xpath('//lldp-remote-system-name')
+            if lldp_neigh_sys:
+                lldp_neigh_sys = lldp_neigh_sys[0].text
+                lldp_print_string = f"  LLDP Neighbor Name: {lldp_neigh_sys}"
+
+            lldp_if_type = lldp.xpath('//lldp-remote-port-id-subtype')
+            if lldp_if_type:
+                lldp_if_type = lldp_if_type[0].text
+
+            lldp_neigh_if = lldp.xpath('//lldp-remote-port-id')
+            if lldp_neigh_if:
+                lldp_neigh_if = lldp_neigh_if[0].text
+                if lldp_if_type == 'Interface name' or lldp_if_type == 'Locally assigned':
+                    lldp_print_string = lldp_print_string + f"  Remote Iface: {lldp_neigh_if}"
+
+            lldp_neigh_if_desc = lldp.xpath('//lldp-remote-port-description')
+            if lldp_neigh_if_desc:
+                lldp_neigh_if_desc = lldp_neigh_if_desc[0].text
+                if lldp_neigh_if != lldp_neigh_if_desc:
+                    lldp_print_string = lldp_print_string + f"  Remote Iface Descr: {lldp_neigh_if_desc}"
 
         #Initialze empty dict for json structure to be written later. Must initialize each element/sub-element
         json_curr_run[eth.name] = {}
