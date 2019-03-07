@@ -1,7 +1,33 @@
 # Summary
-This project gathers useful troubleshooting info from a device including interface errors
-FEC errors if available, and Optic related info if applicable. If Optics are in alarm or warning
-state a message indicating as such is output to the screen.
+This tool is a CLI based tool which can be run either interactively or non-interactively.
+
+Mandatory args include (prompted for if not provided):
+
+```
+-u <username>, --user <username>
+-p <password>, --pass <password>
+-i <inventory_path>, --inventory <inventory_path>
+-o <oper> [<oper> ...], --oper <oper> [<oper> ...]
+```
+
+Optional args (prompted for if not provided):
+
+```
+-l <limit>, --limit <limit>
+-f <limit>, --iface <limit>
+```
+
+The `-q` option will disable prompting for optional args only.
+
+Other Optional args (these are not prompted for):
+```
+-n, --nopass
+-c <ssh_config>, --config <ssh_config>
+-q, --quiet
+```
+
+This project gathers useful troubleshooting info from a device including interface errors and statistics
+as well as optic related info if applicable. If optics are in alarm or warning state, a message indicating as such is output to the screen. When the interface is printed out it includes the following if available: its description, ae it belongs to, lldp info. You can restrict which interfaces are processed by specifying an inteface group either interactively or non-interactively with the `-f` option. See this [host_vars](inventory/dc1/host_vars/qfx5100-b.yml) example on how to configure an interface group. Interface counters are saved for the next run to compare against in the counters directory. Ensure this directory exists by issuing `mkdir counters` before your first run.
 
 Additionally it outputs useful bgp info and searches logs for specific values to aid in t/s.
 
@@ -18,12 +44,21 @@ The Colorama library in conjunction with Python f-strings is used to help visual
 
 *PyEZ is the library used here to interact with the network devices.*
 
+Installation instructions can be found in the [INSTALL.md](INSTALL.md)
+
 # Details
 ### Usage
+
+Supports interactive prompting
+
+`python network_triage.py`
+<img src="docs/menu.png">
+
+Can also be run non-interactive provided that all mandatory args are specified (Prompting for optional args can be disabled with the `-q` option):
 ```
-usage: network_triage.py [-h] [-o <oper> [<oper> ...]] -u <username>
-                         [-p <password>] [-n] [-c <ssh_config>] -i
-                         <inventory_path> [-l <limit>]
+usage: network_triage.py [-h] [-o <oper> [<oper> ...]] [-u <username>]
+                         [-p <password>] [-n] [-c <ssh_config>]
+                         [-i <inventory_path>] [-l <limit>] [-f <limit>] [-q]
 
 Execute troubleshooting operation(s)
 
@@ -42,6 +77,9 @@ optional arguments:
                         provide ansible inventory path
   -l <limit>, --limit <limit>
                         specify host or group to run operations on
+  -f <limit>, --iface <limit>
+                        specify host or group to run operations on
+  -q, --quiet           disable optional interactive prompts
 ```
 If password is not provided you will be prompted for it unless you specify the `--nopass` arg
 
@@ -56,6 +94,10 @@ network_triage.py: error: argument -o/--oper: invalid choice: 'blah' (choose fro
 ```
 
 ### Examples
+
+`python network_triage.py --config ~/.ssh/configs/Columbia -u Lab -n -o ints -i inventory/dc1 -q -f host_ifaces`
+<img src="docs/example4.png">
+
 `python network_triage.py -u Lab -i inventory/dc1 -c ~/.ssh/configs/Columbia -o bgp`
 <img src="docs/example1.png">
 
@@ -70,7 +112,3 @@ Set custom thresholds in the thresholds.json file using comparison operators lik
 i.e. >= 100
 
 *Note: Must include a space after the comparison operator
-
-Defaults:
-
-<img src="docs/thresholds.png">
