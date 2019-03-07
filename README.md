@@ -33,7 +33,7 @@ Additionally it outputs useful bgp info and searches logs for specific values to
 
 As seen in the sample output below you can select which operation you want to run on the command line.
 
-Modify thresholds.json to your desired values for your environment and only devices which violate
+Modify [thresholds.json](thresholds.json) to your desired values for your environment and only devices which violate
 those thresholds will have printed output to the screen.
 
 To take advantage of Ansibles inventory management capabilities, the Python script uses the Ansible Python API
