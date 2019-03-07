@@ -1,0 +1,8 @@
+---
+
+tor_ifaces:
+  - name: xe-0/0/2
+
+host_ifaces:
+  - name: xe-0/0/0
+  - name: xe-0/0/46

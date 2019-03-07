@@ -38,7 +38,7 @@ def _print_if_msg(msg):
         print(msg)
 
 
-def ints(dev):
+def ints(dev, ifaces=None):
 
     def print_interface_header():
         if ae:
@@ -124,6 +124,10 @@ def ints(dev):
     print(f"{Fore.YELLOW}{_create_header('begin troubleshoot interfaces')}{Style.RESET_ALL}\n")
 
     for eth in eths:
+        #if user provides an interface group, then we only analyze ifaces in that group
+        if ifaces and not eth.name in ifaces:
+            continue
+
         if eth['admin'] == 'down':
             print(f"{Fore.GREEN}{eth.name} is admin down, skipping remaining checks{Style.RESET_ALL}")
             continue
@@ -355,15 +359,19 @@ def main():
                         help='provide ansible inventory path')
     parser.add_argument('-l', '--limit', dest='limit', metavar='<limit>',
                         help='specify host or group to run operations on')
+    parser.add_argument('-f', '--iface', dest='iface', metavar='<limit>',
+                        help='specify host or group to run operations on')
+    parser.add_argument('-q', '--quiet', action='store_true',
+                        help='disable optional interactive prompts')
 
     args = parser.parse_args()
 
     print(f"{Fore.YELLOW}Welcome to the Python troubleshooting script for Junos boxes using PyEZ{Style.RESET_ALL}")
-    if not args.user and not args.inventory_path and not args.operations:
-        if _validate_input("Would you like to print the command line help? (y/n) "
-                           "(type n to continue in interactive mode) ", bool):
-            parser.print_help()
-            sys.exit(0)
+    if (not args.user and not args.inventory_path and not args.operations and not args.quiet and
+    _validate_input("Would you like to print the command line help? (y/n) "
+                    "(type n to continue in interactive mode) ", bool)):
+        parser.print_help()
+        sys.exit(0)
 
     if not args.user:
         user = _validate_input("Enter your username: ")
@@ -410,17 +418,22 @@ def main():
         print(f"Inventory Path '{datacenter}' does not exist. quitting...")
         sys.exit(1)
 
-    if not args.limit:
-        if _validate_input("Do you want to limit the execution to a specific set of hosts or groups? (y/n) ", bool):
-            limit = _validate_input("Wildcard matching is supported like * and ? or [1-6] or [a:d] "
+    if (not args.limit and not args.quiet and
+    _validate_input("Do you want to limit the execution to a specific set of hosts or groups? (y/n) ", bool)):
+        limit = _validate_input("Wildcard matching is supported like * and ? or [1-6] or [a:d] "
                                     "i.e. qfx5?00-[a:d] or qfx5100*\nEnter your limit: ")
-        else:
-            limit = None
-    else:
+    elif args.limit:
         limit = args.limit
-    #Allows user to specify None to bypass prompt and skip limit (intended to keep cmd line non-interactive)
-    if limit and limit.lower() == 'none':
+    else:
         limit = None
+
+    if (not args.iface and not args.quiet and
+    _validate_input("Do you want to specify an interface group? (y/n) ", bool)):
+        iface_group = _validate_input("Enter name of interface group you'd like to troubleshoot: ")
+    elif args.iface:
+        iface_group = args.iface
+    else:
+        iface_group = None
 
     if not args.operations:
         operations = []
@@ -453,7 +466,9 @@ def main():
     inventory = InventoryManager(loader=loader, sources=datacenter)
     variables = VariableManager(loader=loader, inventory=inventory)
     success = 0
+    skipped = 0
     failure = 0
+    skipped_hosts = []
     failed_hosts = []
     if limit:
         if "*" in limit:
@@ -477,13 +492,35 @@ def main():
 
         netconf_port = variables.get_vars(host=host)['netconf_port']
 
+        #Begin Device Output to User
+        print(f"{Fore.BLUE}{Style.BRIGHT}Conducting triage of device {hostname}{Style.RESET_ALL}")
+        ifaces = []
+        if iface_group:
+            try:
+                #create list of interfaces from list of dicts for given interface group
+                for iface in variables.get_vars(host=host)[iface_group]:
+                    for k, v in iface.items():
+                        ifaces.append(v)
+            except KeyError as err:
+                print(f"No Interfaces found in group '{iface_group}' for host '{hostname}'")
+                skipped = skipped + 1
+                skipped_hosts.append(hostname)
+                continue
+            except Exception as err:
+                print(f"{Fore.RED}Abnormal termination: {err.__class__.__name__, err}{Style.RESET_ALL}")
+                sys.exit(1)
+                ifaces = None
+
+        #Begin Netconf comms with Device and execute list of operations
         try:
-            print(f"{Fore.BLUE}{Style.BRIGHT}Conducting triage of device {hostname}{Style.RESET_ALL}")
             with Device(host=hostname, port=netconf_port, user=user, passwd=passwd, ssh_config=args.ssh_config,
                         auto_probe=5) as dev:
                 for operation in operations:
                     if callable(globals()[operation]) and not operation.startswith('_'):
-                        globals()[operation](dev)
+                        if operation == 'ints' and ifaces:
+                            globals()[operation](dev, ifaces=ifaces)
+                        else:
+                            globals()[operation](dev)
                     else:
                         print(f"{Fore.RED}Invalid operation: '{operation}'\nProblem with code. Make sure oper_choices "
                               f"matches the public(no leading underscore) function names{Style.RESET_ALL}")
@@ -501,11 +538,16 @@ def main():
         except Exception as err:
             print(f"{Fore.RED}Abnormal termination: {err.__class__.__name__, err}{Style.RESET_ALL}")
             sys.exit(1)
+
+    #print out summary messages at the end
     if success > 0:
         print(f"{Fore.GREEN}Successfully connected to: {success} device(s){Style.RESET_ALL}")
+    if skipped > 0:
+        print(f"{Fore.YELLOW}Skipped {skipped} device(s)\nSkipped Hosts: "
+              f"{skipped_hosts}{Style.RESET_ALL}")
     if failure > 0:
         print(f"{Fore.RED}Failed to connect to {failure} device(s)\nFailed Hosts: {failed_hosts}{Style.RESET_ALL}")
-    if not success and not failure:
+    if not success and not skipped and not failure:
         if limit:
             print(f"{Fore.RED}No Hosts/Groups matched limit '{limit}' in Inventory Path '{datacenter}'"
                   f"{Style.RESET_ALL}")

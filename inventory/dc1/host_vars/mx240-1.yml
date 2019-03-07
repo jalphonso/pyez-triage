@@ -1,0 +1,8 @@
+---
+
+core_ifaces:
+  - name: xe-2/1/1
+  - name: xe-2/1/19
+
+tor_ifaces:
+  - name: xe-2/0/1
