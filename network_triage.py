@@ -11,8 +11,9 @@ from colorama import Fore, Style
 from datetime import datetime
 from jnpr.junos import Device
 from jnpr.junos.exception import ConnectError, ProbeError, ConnectAuthError
-from jnpr.junos.op.phyport import PhyPortErrorTable
 from jnpr.junos.op.bgp import bgpTable
+from jnpr.junos.op.fpc import FpcInfoTable
+from jnpr.junos.op.phyport import PhyPortErrorTable
 from jnpr.junos.utils.scp import SCP
 from math import floor, ceil
 from myTables.OpTables import (PortFecTable, PhyPortDiagTable, EthMacStatTable, EthPcsStatTable,
@@ -307,7 +308,24 @@ def info(dev):
     print(f"RE0 Uptime: {dev.facts['RE0']['up_time']}")
     if dev.facts['2RE']:
         print(f"  RE1 Uptime: {dev.facts['RE1']['up_time']}")
+
+    #Process FPC states
+    fpcs = FpcInfoTable(dev).get()
+    states = {}
+    bad_fpcs = []
+    for fpc in fpcs:
+        if fpc['state'] in states.keys():
+            states[fpc['state']] = states[fpc['state']] + 1
+        else:
+            states[fpc['state']] = 1
+        if fpc['state'] != "Online" and fpc['state'] != "Empty":
+            bad_fpcs.append(fpc.name)
+    print(f"FPC status: {dict(sorted(states.items(), reverse=True))}")
+    if bad_fpcs:
+        print(f"{Fore.RED}FPCs not online: {bad_fpcs}{Style.RESET_ALL}")
+
     print(f"{Fore.YELLOW}{_create_header('end of get info (device facts)')}{Style.RESET_ALL}\n")
+
 
 def _validate_input(prompt, input_type=str, input_min=None, input_max=None):
     max_tries = 5
