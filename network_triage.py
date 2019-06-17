@@ -227,10 +227,10 @@ def ints(dev, ifaces=None):
                                 diff = row[subkey] - json_prev_run[eth.name][subkey]
                                 prevtimestamp = datetime.strptime(json_prev_run['timestamp'], '%Y-%m-%d %H:%M:%S.%f')
                                 timediff = timestamp - prevtimestamp
-                                seconds = timediff.seconds
+                                seconds = timediff.total_seconds()
                                 if diff !=0:
                                     print(f"     {Fore.MAGENTA}previous value was {str(json_prev_run[eth.name][subkey])}"
-                                            f" which is a difference of {str(diff)} from the last run {seconds}s ago"
+                                            f" which is a difference of {str(diff)} from the last run {round(seconds,2):0.2f}s ago"
                                             f" or about {round(diff/seconds,2):0.2f}/second"
                                             f"{Style.RESET_ALL}")
                             except Exception:
