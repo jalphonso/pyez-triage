@@ -328,8 +328,21 @@ def info(dev):
   print(f"{Fore.YELLOW}{_create_header('end of get info (device facts)')}{Style.RESET_ALL}\n")
 
 
+def pem(dev):
+  print(f"{Fore.YELLOW}{_create_header('begin check pem health')}{Style.RESET_ALL}\n")
+  pem_info = dev.rpc.get_environment_pem_information()
+  pem_names = pem_info.xpath('//name')
+  pem_statuses = pem_info.xpath('//state')
+  for idx, pem_name in enumerate(pem_names):
+    pem_status = pem_statuses[idx].text
+    pem_name = pem_name.text
+    if pem_status != 'Online':
+      print(f"{Fore.RED}Device {dev.hostname} has a problem with {pem_name}. Status is {pem_status}.{Style.RESET_ALL}")
+  print(f"{Fore.YELLOW}{_create_header('end of check pem health')}{Style.RESET_ALL}\n")
+
+
 def main():
-  oper_choices = ["all", "ints", "bgp", "logs", "info"]
+  oper_choices = ["all", "ints", "bgp", "logs", "info", "pem"]
   parser = argparse.ArgumentParser(description='Execute troubleshooting operation(s)')
   parser.add_argument('-o', '--oper', dest='operations', metavar='<oper>',
                       choices=oper_choices, nargs='+',
