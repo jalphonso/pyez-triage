@@ -19,6 +19,7 @@ from math import floor, ceil
 from myTables.OpTables import (PortFecTable, PhyPortDiagTable, EthMacStatTable, EthPcsStatTable,
                                EthPortExtTable, EthPortTable, bgpSummaryTable, bgpTable)
 from pathlib import Path
+from validate import validate_bool, validate_choice, validate_int, validate_password, validate_str
 
 
 def _reached_threshold(actual, threshold):
@@ -327,50 +328,6 @@ def info(dev):
   print(f"{Fore.YELLOW}{_create_header('end of get info (device facts)')}{Style.RESET_ALL}\n")
 
 
-def _validate_input(prompt, input_type=str, input_min=None, input_max=None):
-  max_tries = 5
-  tries = 0
-  while True and tries < max_tries:
-    user_input = input(prompt).strip()
-    if not user_input:
-      print("Input cannot be blank, please try again")
-    elif input_type == int:
-      try:
-        user_input = int(user_input)
-      except ValueError:
-        print("Input needs to be an integer, please try again")
-        tries += 1
-        continue
-      if input_min and input_max and input_min < input_max:
-        if user_input < input_min or user_input > input_max:
-          print(f"Input needs to between {input_min} and {input_max}, please try again")
-        else:
-          break
-      elif input_min and user_input < input_min:
-        print(f"Input needs to be greater than or equal to {input_min}, please try again")
-      elif input_max and user_input > input_max:
-        print(f"Input needs to be less than or equal to {input_max}, please try again")
-      else:
-        break
-    elif input_type == bool:
-      bool_char = user_input.lower()
-      if bool_char == 'y' or bool_char == 'yes':
-        user_input = True
-        break
-      elif bool_char == 'n' or bool_char == 'no':
-        user_input = False
-        break
-      else:
-        print(f"Input needs to be yes/no or y/n, please try again")
-    else:
-      break
-    tries += 1
-  if tries == max_tries:
-    print("Reached maximum attempts to validate input, quitting...")
-    sys.exit(1)
-  return user_input
-
-
 def main():
   oper_choices = ["all", "ints", "bgp", "logs", "info"]
   parser = argparse.ArgumentParser(description='Execute troubleshooting operation(s)')
@@ -398,13 +355,13 @@ def main():
 
   print(f"{Fore.YELLOW}Welcome to the Python troubleshooting script for Junos boxes using PyEZ{Style.RESET_ALL}")
   if (not args.user and not args.inventory_path and not args.operations and not args.quiet and
-      _validate_input("Would you like to print the command line help? (y/n) "
-                      "(type n to continue in interactive mode) ", bool)):
+      validate_bool("Would you like to print the command line help? (y/n) "
+                    "(type n to continue in interactive mode) ")):
     parser.print_help()
     sys.exit(0)
 
   if not args.user:
-    user = _validate_input("Enter your username: ")
+    user = validate_str("Enter your username: ")
   else:
     user = args.user
 
@@ -436,8 +393,8 @@ def main():
     print("\nAvailable Datacenters:")
     for idx, choice in enumerate(inventory_choices):
       print(f"{idx+1}: {choice.name}")
-    user_choice = _validate_input("\nSelect Datacenter (Type Number only and press Enter):", int, 1,
-                                  inventory_choices.__len__())
+    user_choice = validate_int("\nSelect Datacenter (Type Number only and press Enter):", input_min=1,
+                               input_max=inventory_choices.__len__())
     choice = inventory_choices[user_choice - 1]
     datacenter = choice.as_posix()
     print(f"Datacenter {choice.name} selected")
@@ -449,17 +406,17 @@ def main():
     sys.exit(1)
 
   if (not args.limit and not args.quiet and
-          _validate_input("Do you want to limit the execution to a specific set of hosts or groups? (y/n) ", bool)):
-    limit = _validate_input("Wildcard matching is supported like * and ? or [1-6] or [a:d] "
-                            "i.e. qfx5?00-[a:d] or qfx5100*\nEnter your limit: ")
+          validate_bool("Do you want to limit the execution to a specific set of hosts or groups? (y/n) ")):
+    limit = validate_str("Wildcard matching is supported like * and ? or [1-6] or [a:d] "
+                         "i.e. qfx5?00-[a:d] or qfx5100*\nEnter your limit: ")
   elif args.limit:
     limit = args.limit
   else:
     limit = None
 
   if (not args.iface and not args.quiet and
-          _validate_input("Do you want to specify an interface group? (y/n) ", bool)):
-    iface_group = _validate_input("Enter name of interface group you'd like to troubleshoot: ")
+          validate_bool("Do you want to specify an interface group? (y/n) ")):
+    iface_group = validate_str("Enter name of interface group you'd like to troubleshoot: ")
   elif args.iface:
     iface_group = args.iface
   else:
@@ -474,7 +431,7 @@ def main():
         break
       for idx, choice in enumerate(oper_choices):
         print(f"{idx+1}: {choice}")
-      choice = _validate_input("Select operation:", int, 1, oper_choices.__len__())
+      choice = validate_int("Select operation:", input_min=1, input_max=oper_choices.__len__())
       operation = oper_choices[choice - 1]
       if operation == 'all':
         oper_choices.remove('all')
@@ -483,7 +440,7 @@ def main():
       operations.append(operation)
       oper_choices.remove(operation)
       print(f"Operation(s) {operation} selected")
-      if not _validate_input("Would you like to select another operation? ", bool):
+      if not validate_bool("Would you like to select another operation? "):
         break
     print(f"List of operations selected are {operations}")
   elif args.operations == ['all']:

@@ -16,6 +16,7 @@ pycparser
 PyNaCl
 pyserial
 PyYAML
+retrying
 scp
 selectors2
 six
