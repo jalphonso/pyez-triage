@@ -341,8 +341,27 @@ def pem(dev):
   print(f"{Fore.YELLOW}{_create_header('end of check pem health')}{Style.RESET_ALL}\n")
 
 
+def alarms(dev):
+  print(f"{Fore.YELLOW}{_create_header('begin alarm check')}{Style.RESET_ALL}\n")
+  system_alarms = dev.rpc.get_system_alarm_information()
+  chassis_alarms = dev.rpc.get_alarm_information()
+  print("SYSTEM ALARMS:")
+  for alarm in system_alarms.xpath('//alarm-description'):
+    print(alarm.text)
+  print("\nCHASSIS ALARMS:")
+  for alarm in chassis_alarms.xpath('//alarm-description'):
+    print(alarm.text)
+  print(f"{Fore.YELLOW}{_create_header('end of alarm check')}{Style.RESET_ALL}\n")
+
+
+def junos_cmd(dev, cmd):
+  print(f"{Fore.YELLOW}{_create_header('begin execute junos command')}{Style.RESET_ALL}\n")
+  print(dev.cli(cmd, warning=False))
+  print(f"{Fore.YELLOW}{_create_header('end of execute junos command')}{Style.RESET_ALL}\n")
+
+
 def main():
-  oper_choices = ["all", "ints", "bgp", "logs", "info", "pem"]
+  oper_choices = ["all", "ints", "bgp", "logs", "info", "pem", "alarms", "junos_cmd"]
   parser = argparse.ArgumentParser(description='Execute troubleshooting operation(s)')
   parser.add_argument('-o', '--oper', dest='operations', metavar='<oper>',
                       choices=oper_choices, nargs='+',
@@ -363,7 +382,8 @@ def main():
                       help='specify host or group to run operations on')
   parser.add_argument('-q', '--quiet', action='store_true',
                       help='disable optional interactive prompts')
-
+  parser.add_argument('-j', '--junos_cmd', dest='cmd', metavar='<junos cmd>',
+                      help='junos cli cmd to run')
   args = parser.parse_args()
 
   print(f"{Fore.YELLOW}Welcome to the Python troubleshooting script for Junos boxes using PyEZ{Style.RESET_ALL}")
@@ -462,6 +482,12 @@ def main():
   else:
     operations = args.operations
 
+  if 'junos_cmd' in operations:
+    if not args.cmd:
+      cmd = validate_str("Enter Junos CLI command to be executed: ")
+    else:
+      cmd = args.cmd
+
   loader = DataLoader()
   inventory = InventoryManager(loader=loader, sources=datacenter)
   variables = VariableManager(loader=loader, inventory=inventory)
@@ -519,6 +545,8 @@ def main():
           if callable(globals()[operation]) and not operation.startswith('_'):
             if operation == 'ints' and ifaces:
               globals()[operation](dev, ifaces=ifaces)
+            elif operation == 'junos_cmd':
+              globals()[operation](dev, cmd=cmd)
             else:
               globals()[operation](dev)
           else:
