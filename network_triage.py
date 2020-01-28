@@ -306,9 +306,12 @@ def info(dev):
   print(f"{Fore.YELLOW}{_create_header('begin get info (device facts)')}{Style.RESET_ALL}\n")
   print(f"Hostname: {dev.facts['hostname']:21} Version: {dev.facts['version']}\n"
         f"Model:    {dev.facts['model']:21} SN:      {dev.facts['serialnumber']}")
-  print(f"RE0 Uptime: {dev.facts['RE0']['up_time']}")
-  if dev.facts['2RE']:
-    print(f"  RE1 Uptime: {dev.facts['RE1']['up_time']}")
+  try:
+    print(f"RE0 Uptime: {dev.facts['RE0']['up_time']}")
+    if dev.facts['2RE']:
+      print(f"  RE1 Uptime: {dev.facts['RE1']['up_time']}")
+  except:
+    print(f"RE1 Uptime: {dev.facts['RE1']['up_time']}")
 
   # Process FPC states
   fpcs = FpcInfoTable(dev).get()
