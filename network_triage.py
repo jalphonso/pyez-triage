@@ -11,13 +11,14 @@ from colorama import Fore, Style
 from datetime import datetime
 from jnpr.junos import Device
 from jnpr.junos.exception import ConnectError, ProbeError, ConnectAuthError
-from jnpr.junos.op.bgp import bgpTable
+from jnpr.junos.op.ospf import OspfNeighborTable
+from jnpr.junos.op.routes import RouteSummaryTable
 from jnpr.junos.op.fpc import FpcInfoTable
 from jnpr.junos.op.phyport import PhyPortErrorTable
 from jnpr.junos.utils.scp import SCP
 from math import floor, ceil
 from myTables.OpTables import (PortFecTable, PhyPortDiagTable, EthMacStatTable, EthPcsStatTable,
-                               EthPortExtTable, EthPortTable, bgpSummaryTable, bgpTable)
+                               EthPortExtTable, EthPortTable, bgpSummaryTable, bgpTable, OspfInterfaceTable)
 from pathlib import Path
 from validate import validate_bool, validate_choice, validate_int, validate_password, validate_str
 
@@ -271,6 +272,40 @@ def bgp(dev):
   print(f"{Fore.YELLOW}{_create_header('end of troubleshoot bgp')}{Style.RESET_ALL}\n")
 
 
+def ospf(dev, instance=None):
+  print(f"{Fore.YELLOW}{_create_header('begin troubleshoot ospf')}{Style.RESET_ALL}\n")
+  if instance:
+    neighbors = OspfNeighborTable(dev).get(instance=instance)
+    interfaces = OspfInterfaceTable(dev).get(instance=instance)
+  else:
+    neighbors = OspfNeighborTable(dev).get()
+    interfaces = OspfInterfaceTable(dev).get()
+  for interface in interfaces:
+    if interface.passive:
+      passive = 'yes'
+    else:
+      passive = 'no'
+    print(f"Interface: {interface.interface_name:21} Neighbor Count: {interface.neighbor_count}\n"
+          f"  Passive: {passive}"
+         )
+    print("  Neighbors:")
+    for neighbor in neighbors:
+      if interface.interface_name == neighbor.interface_name:
+        if neighbor.ospf_neighbor_state != "Full":
+          print(f"    {Fore.RED}{neighbor.neighbor_address:15} Uptime: {str(neighbor.neighbor_up_time):15}"
+                f"Neighbor state: {neighbor.ospf_neighbor_state}{Style.RESET_ALL}")
+        else:
+          print(f"    {neighbor.neighbor_address:15} Uptime: {neighbor.neighbor_up_time}")
+  routes = RouteSummaryTable(dev).get()
+  total_routes = 0
+  for route in routes:
+    if route.proto['OSPF']:
+      print(f"Table: {route.name} routes:{route.proto['OSPF'].count} active:{route.proto['OSPF'].active}")
+      total_routes = total_routes + route.proto['OSPF'].count
+  print(f"Total OSPF Routes: {total_routes}")
+  print(f"{Fore.YELLOW}{_create_header('end of troubleshoot ospf')}{Style.RESET_ALL}\n")
+
+
 def logs(dev):
   print(f"{Fore.YELLOW}{_create_header('begin parse syslog')}{Style.RESET_ALL}\n")
 
@@ -364,7 +399,7 @@ def junos_cmd(dev, cmd):
 
 
 def main():
-  oper_choices = ["all", "ints", "bgp", "logs", "info", "pem", "alarms", "junos_cmd"]
+  oper_choices = ["all", "ints", "bgp", "ospf", "logs", "info", "pem", "alarms", "junos_cmd"]
   parser = argparse.ArgumentParser(description='Execute troubleshooting operation(s)')
   parser.add_argument('-o', '--oper', dest='operations', metavar='<oper>',
                       choices=oper_choices, nargs='+',
@@ -387,6 +422,8 @@ def main():
                       help='disable optional interactive prompts')
   parser.add_argument('-j', '--junos_cmd', dest='cmd', metavar='<junos cmd>',
                       help='junos cli cmd to run')
+  parser.add_argument('-r', '--instance', dest='instance', metavar='<routing-instance>',
+                      help='specify routing instance for ospf')
   args = parser.parse_args()
 
   print(f"{Fore.YELLOW}Welcome to the Python troubleshooting script for Junos boxes using PyEZ{Style.RESET_ALL}")
@@ -457,6 +494,14 @@ def main():
     iface_group = args.iface
   else:
     iface_group = None
+
+  if (not args.instance and not args.quiet and
+          validate_bool("Do you want to specify a routing instance? (y/n) ")):
+    instance = validate_str("Enter name of routing instance: ")
+  elif args.instance:
+    instance = args.instance
+  else:
+    instance = None
 
   if not args.operations:
     operations = []
@@ -548,6 +593,8 @@ def main():
           if callable(globals()[operation]) and not operation.startswith('_'):
             if operation == 'ints' and ifaces:
               globals()[operation](dev, ifaces=ifaces)
+            elif operation == 'ospf' and instance:
+              globals()[operation](dev, instance=instance)
             elif operation == 'junos_cmd':
               globals()[operation](dev, cmd=cmd)
             else:

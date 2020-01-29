@@ -188,3 +188,18 @@ bgpView:
     route_received: bgp-rib/received-prefix-count
     local_interface: local-interface-name
     peer_state: peer-state
+
+OspfInterfaceTable:
+  rpc: get-ospf-interface-information
+  args:
+    detail: True
+  item: ospf-interface
+  key: interface-name
+  view: OspfInterfaceView
+
+OspfInterfaceView:
+  fields:
+    interface_name: interface-name
+    ospf_interface_state: ospf-interface-state
+    neighbor_count: neighbor-count
+    passive: passive
