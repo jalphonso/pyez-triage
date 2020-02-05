@@ -495,14 +495,6 @@ def main():
   else:
     iface_group = None
 
-  if (not args.instance and not args.quiet and
-          validate_bool("Do you want to specify a routing instance? (y/n) ")):
-    instance = validate_str("Enter name of routing instance: ")
-  elif args.instance:
-    instance = args.instance
-  else:
-    instance = None
-
   if not args.operations:
     operations = []
     while True:
@@ -535,6 +527,14 @@ def main():
       cmd = validate_str("Enter Junos CLI command to be executed: ")
     else:
       cmd = args.cmd
+
+  if (not args.instance and not args.quiet and 'ospf' in operations and
+          validate_bool("Do you want to specify a routing instance? (y/n) ")):
+    instance = validate_str("Enter name of routing instance: ")
+  elif args.instance:
+    instance = args.instance
+  else:
+    instance = None
 
   loader = DataLoader()
   inventory = InventoryManager(loader=loader, sources=datacenter)
