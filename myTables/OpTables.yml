@@ -203,3 +203,17 @@ OspfInterfaceView:
     ospf_interface_state: ospf-interface-state
     neighbor_count: neighbor-count
     passive: passive
+
+HMCTable:
+   command: show hmc asic
+   target: null
+   key: "chip ID"
+   view: HMCView
+
+HMCView:
+   columns:
+     id: "chip ID"
+     name: "chip name"
+     fw_set: FW_Set
+     rev: Product_Rev
+     num: "chip num"

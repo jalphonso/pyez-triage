@@ -13,14 +13,18 @@ from jnpr.junos import Device
 from jnpr.junos.exception import ConnectError, ProbeError, ConnectAuthError
 from jnpr.junos.op.ospf import OspfNeighborTable
 from jnpr.junos.op.routes import RouteSummaryTable
-from jnpr.junos.op.fpc import FpcInfoTable
+from jnpr.junos.op.fpc import FpcInfoTable, FpcHwTable
 from jnpr.junos.op.phyport import PhyPortErrorTable
 from jnpr.junos.utils.scp import SCP
 from math import floor, ceil
 from myTables.OpTables import (PortFecTable, PhyPortDiagTable, EthMacStatTable, EthPcsStatTable,
-                               EthPortExtTable, EthPortTable, bgpSummaryTable, bgpTable, OspfInterfaceTable)
+                               EthPortExtTable, EthPortTable, bgpSummaryTable, bgpTable, OspfInterfaceTable,
+                               HMCTable)
 from pathlib import Path
 from validate import validate_bool, validate_choice, validate_int, validate_password, validate_str
+
+
+OLD_MEMORY_VALUES = [0x0090, 0x009a, 0x009b]
 
 
 def _reached_threshold(actual, threshold):
@@ -339,8 +343,8 @@ def logs(dev):
 
 def info(dev):
   print(f"{Fore.YELLOW}{_create_header('begin get info (device facts)')}{Style.RESET_ALL}\n")
-  print(f"Hostname: {dev.facts['hostname']:21} Version: {dev.facts['version']}\n"
-        f"Model:    {dev.facts['model']:21} SN:      {dev.facts['serialnumber']}")
+  print(f"Hostname: {dev.facts['hostname']:21} Version:    {dev.facts['version']}\n"
+        f"Model:    {dev.facts['model']:21} Chassis SN: {dev.facts['serialnumber']}")
   try:
     print(f"RE0 Uptime: {dev.facts['RE0']['up_time']}")
     if dev.facts['2RE']:
@@ -351,17 +355,39 @@ def info(dev):
   # Process FPC states
   fpcs = FpcInfoTable(dev).get()
   states = {}
-  bad_fpcs = []
+  offline_fpcs = []
   for fpc in fpcs:
     if fpc['state'] in states.keys():
       states[fpc['state']] = states[fpc['state']] + 1
     else:
       states[fpc['state']] = 1
     if fpc['state'] != "Online" and fpc['state'] != "Empty":
-      bad_fpcs.append(fpc.name)
+      offline_fpcs.append(fpc.name)
   print(f"FPC status: {dict(sorted(states.items(), reverse=True))}")
-  if bad_fpcs:
-    print(f"{Fore.RED}FPCs not online: {bad_fpcs}{Style.RESET_ALL}")
+  if offline_fpcs:
+    print(f"{Fore.RED}FPCs not online: {offline_fpcs}{Style.RESET_ALL}")
+
+  # Check for old fpc memory
+  found_old_memory_chassis = False
+  fpc_hw_info = FpcHwTable(dev).get()
+  for fpc in fpcs:
+    found_old_memory_fpc = False
+    if fpc['state'] == "Empty":
+      continue
+    slot = fpc.name
+    fpc_hw = fpc_hw_info[f"FPC {slot}"]
+    target = f"fpc{slot}"
+    hmc_data = HMCTable(dev).get(target=target)
+    for k,v in hmc_data:
+      if int(v['fw_set'],16) in OLD_MEMORY_VALUES:
+        if not found_old_memory_fpc:
+          found_old_memory_fpc = True
+          found_old_memory_chassis = True
+          print(f"{Fore.RED}fpc {slot}, sn: {fpc_hw['sn']} has old memory{Style.RESET_ALL}")
+        print(f"{Fore.RED}    id: {v['id']:3} name: {v['name']} fw_set: {v['fw_set']} "
+              f"prod_rev: {v['rev']} num: {v['num']}{Style.RESET_ALL}")
+  if not found_old_memory_chassis:
+    print("No old memory found for this chassis")
 
   print(f"{Fore.YELLOW}{_create_header('end of get info (device facts)')}{Style.RESET_ALL}\n")
 
