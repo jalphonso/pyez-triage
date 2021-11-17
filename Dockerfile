@@ -5,4 +5,4 @@ RUN pip install ansible
 RUN pip install colorama
 
 COPY . .
-ENTRYPOINT python3 network_triage.py
+ENTRYPOINT ["python3", "network_triage.py"]
